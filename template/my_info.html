@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <title>签到</title>
+    <style type="text/css">
+        @font-face{
+            font-family:youai;
+            src:url('font/youai.ttf');
+        }
+        div{
+            font-family: youai;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" style="width: 600px;background-image: url('img/bg.png');" id="main">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-4 text-center">
+                        <div class="alert" style="border: radius 50px;">
+                            <img src="http://q1.qlogo.cn/g?b=qq&nk={{user_id}}&s=100" class="img-thumbnail" style="border-radius:1.25rem">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h2>{{ base_attribute.名称 }}</h2>
+                        <h4>银两：<strong style="color:rgb(136, 57, 43);">{{gold}}</strong> 两</h4>
+                    </div>
+                    {% if base_attribute.重伤状态 %}
+                    <div class="col-2">
+                        <img src="./img/死.svg" height="40" width="40">
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="row">
+                    <div class="col-4">
+                        <h4>体质：{{ base_attribute.体质 }}</h4>
+                        <h4>身法：{{ base_attribute.身法 }}</h4>
+                        <h4>根骨：{{ base_attribute.根骨 }}</h4>
+                        <h4>力道：{{ base_attribute.力道 }}</h4>
+                        <h4>元气：{{ base_attribute.元气 }}</h4>
+                        <h4>善恶值：<strong style="color:rgb(136, 57, 43);">{{ base_attribute.善恶值 }}</strong></h4>
+                    </div>
+                    <div class="col-8">
+                        {% if user_stat.当前气血 < user_stat.气血上限/2 %}
+                            <h5>气血：<span style="color:rgb(136, 57, 43);">{{ user_stat.当前气血 }}</span>/<span style="color:rgb(136, 57, 43);">{{ user_stat.气血上限 }}</span></h5>
+                            {% else %}
+                            <h5>气血：<span style="color:rgb(65, 136, 43);">{{ user_stat.当前气血 }}</span>/<span style="color:rgb(65, 136, 43);">{{ user_stat.气血上限 }}</span></h5>
+                        {% endif %}
+                        <h5>内力：<span style="color:rgb(24, 68, 161);">{{ user_stat.当前内力 }}</span>/<span style="color:rgb(24, 68, 161);">{{ user_stat.内力上限 }}</span></h5>
+                        <h5>速度：{{user_stat.速度}}</h5>
+                        <h5>状态抗性：{{user_stat.状态抗性}}</h5>
+                        <h5>外功攻击：{{user_stat.外功攻击}} | 外功穿透：{{user_stat.外功穿透}}</h5>
+                        <h5>内功攻击：{{user_stat.内功攻击}} | 内功穿透：{{user_stat.内功穿透}}</h5>
+                        <h5>外功防御：{{user_stat.外功防御}} | 内功防御：{{user_stat.内功防御}}</h5>
+                    </div>
+                </div>
+                {% if base_attribute.装备 %}
+                <br>
+                <div class="row">
+                    <h4>装备</h4>
+                    <h5>
+                        {%- for i in base_attribute.装备 -%}
+                        {% if base_attribute.装备[i] %}
+                        【{{i}}】{{base_attribute.装备[i]}}
+                        {% endif %}
+                        {% endfor %}
+                    </h5>
+                </div>
+                {% endif %}
+                <br>
+                <div class="row">
+                    <h4>武学</h4>
+                    <h5>
+                        {%- for i in base_attribute.武学 -%}
+                        {% if i %}
+                        【{{ i }}】
+                        {% else %}
+                        【】
+                        {% endif %}
+                        {% endfor %}
+                    </h5>
+                    {% if base_attribute.已领悟武学 %}
+                    <h4>已领悟武学</h4>
+                    <h6>
+                        {%- for i in base_attribute.已领悟武学 -%}
+                        [{{ i }}]
+                        {% endfor %}
+                    </h6>
+                    {% endif %}
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-12">
+                        {% if suangua_data.bengua %}
+                        <h4>卦象</h4>
+                        <h5><strong>【 {{suangua_data.bengua}} 】</strong>{% if suangua_data.biangua %} 变卦：{{ suangua_data.biangua }}{% endif %}</h5>
+                        <h5>象曰：{{ suangua_data.guaxiang }}</h5>
+                            {% if suangua_data.fuxiang %}
+                            <h5>辅：{{ suangua_data.fuxiang }}</h5>
+                            {% endif %}
+                        {% endif %}
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

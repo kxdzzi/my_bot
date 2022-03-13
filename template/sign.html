@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <title>签到</title>
+    <style type="text/css">
+        @font-face{
+            font-family:youai;
+            src:url('font/youai.ttf');
+        }
+        div{
+            font-family: youai;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" style="width: 800px;background-image: url('img/bg.png');" id="main">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-6 text-center">
+                        <div class="alert" style="border: radius 50px;">
+                            <img src="http://q1.qlogo.cn/g?b=qq&nk={{user_id}}&s=640" class="img-thumbnail" style="border-radius:1.25rem">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h1>{{ user_name }}</h1>
+                        <br>
+                        <h3>江湖第 <strong style="color:rgb(136, 57, 43);">{{sign_num}}</strong> 名 | 本群福缘 <strong style="color:rgb(136, 57, 43);">+{{add_lucky}}</strong></h3>
+                        <h4>银两 +<strong">{{get_gold_num}}</strong> (共 {{gold}} 两)</h4>
+                        <br>
+                        <h4><strong>【 {{bengua}} 】</strong>{% if biangua %} 变卦：{{ biangua }}{% endif %}</h4>
+                        <h4>象曰：{{ guaxiang }}</h4>
+                        {% if fuxiang %}
+                        <h4>辅：{{ fuxiang }}</h4>
+                        {% endif %}
+                    </div>
+                    <div class="col-8 text-center">
+                    </div>
+                </div>
+                <div class="row">
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

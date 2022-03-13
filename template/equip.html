@@ -1,0 +1,39 @@
+<doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+
+    <title>装备</title>
+    <style type="text/css">
+        @font-face{
+            font-family:youai;
+            src:url('font/pinyin.ttf');
+        }
+        .equip{
+            font-family: youai;
+	        font-size:35px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main"  style="text-align:center;width: 300px;padding: 10px;background-image: url('img/bg.png');">
+        <h3>{{ 持有人 }}<span style="color:rgb(136, 57, 43);">的</span>装备</h3>
+        <br>
+        <div>
+            {% for i in 装备 %}
+                {% if i.是否装备 %}
+	            <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip" style="color:rgb(26, 84, 122);">{{i.名称}}</span> {{i.价格}}</div>
+                {% else %}
+		        <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip">{{i.名称}}</span> {{i.价格}}</div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <br>
+        <div>第{{ 当前页 }}页 共{{ 页数 }}页</div>
+    </div>
+</body>
+</html>

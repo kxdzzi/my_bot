@@ -1,0 +1,298 @@
+import os
+import random
+import time
+from datetime import datetime
+from typing import Literal, Optional
+
+from httpx import AsyncClient
+from nonebot.adapters.onebot.v11 import Bot, Message, MessageSegment
+from nonebot.adapters.onebot.v11.event import (GroupIncreaseNoticeEvent,
+                                               GroupMessageEvent)
+from nonebot.plugin import get_loaded_plugins
+from src.utils.chat import chat
+from src.utils.config import config
+from src.utils.content_check import content_check
+from src.utils.db import db
+from src.utils.log import logger
+
+data_dir = os.path.realpath(__file__ + "/../../../../data/")
+
+
+async def get_main_server(server: str) -> Optional[str]:
+    '''获取主服务器'''
+    params = {"name": server}
+    url = "https://www.jx3api.com/app/server"
+    async with AsyncClient() as client:
+        try:
+            req = await client.get(url=url, params=params)
+            req_json = req.json()
+            if req_json['code'] == 200:
+                return req_json['data']['server']
+            return None
+        except Exception:
+            return None
+
+
+async def bind_server(group_id: int, server: str):
+    '''绑定服务器'''
+    db.group_conf.update_one({'_id': group_id}, {'$set': {
+        "server": server
+    }}, True)
+
+
+async def set_activity(group_id: int, activity: int):
+    '''设置活跃值'''
+    db.group_conf.update_one({'_id': group_id},
+                             {'$set': {
+                                 "robot_active": activity
+                             }}, True)
+
+
+async def set_status(group_id: int, status: bool):
+    '''设置机器人开关'''
+    db.group_conf.update_one({'_id': group_id},
+                             {'$set': {
+                                 "group_switch": status
+                             }}, True)
+
+
+async def get_meau_data(group_id: int) -> dict:
+    '''获取菜单数据'''
+    req_data = {}
+    _con = db.group_conf.find_one({'_id': group_id})
+    if _con:
+        req_data['group'] = _con
+    else:
+        req_data['group'] = {}
+    _con = db.plugins_info.find_one({'_id': group_id})
+    if _con:
+        req_data['plugin'] = []
+        for v in _con.values():
+            if isinstance(v, dict):
+                req_data['plugin'].append(v)
+    else:
+        req_data['plugin'] = []
+    return req_data
+
+
+async def get_notice_status(
+    group_id: int, notice_type: Literal["welcome_status", "goodnight_status",
+                                        "someoneleft_status"]
+) -> bool:
+    '''获取通知状态'''
+
+    _con = db.group_conf.find_one({'_id': group_id})
+    if _con:
+        return _con.get(notice_type, False)
+
+
+async def message_decoder(bot: Bot, event: GroupIncreaseNoticeEvent,
+                          notice_type: Literal["离群通知", "进群通知"]) -> Message:
+    '''设置通知消息'''
+    try:
+        group_id = event.group_id
+        user_id = event.user_id
+
+        group_info = await bot.get_group_info(group_id=group_id)
+        group_name = group_info["group_name"]
+        member_count = group_info["member_count"] + 1
+        max_member_count = group_info["max_member_count"]
+        group_level = group_info["group_level"]
+
+        content_data = {
+            "群号": group_id,
+            "群名": group_name,
+            "群人数": member_count,
+            "最大人数": max_member_count,
+            "群等级": group_level,
+        }
+        if notice_type == "进群通知":
+            user_info = await bot.get_group_member_info(group_id=group_id,
+                                                        user_id=user_id)
+            join_time = datetime.fromtimestamp(
+                user_info["join_time"]).strftime("%Y-%m-%d %H:%M:%S")
+            level = user_info["level"]
+            nickname = user_info["nickname"]
+            sex = "女" if user_info["sex"] == "female" else "男"
+            age = user_info["age"]
+            content_data.update({
+                "QQ": user_id,
+                "进群时间": join_time,
+                "用户名": nickname,
+                "等级": level,
+                "性别": sex,
+                "年龄": age,
+                "@QQ": "@QQ"
+            })
+
+        msg = ""
+        _con = db.group_conf.find_one({'_id': group_id})
+        if _con:
+            content = _con.get(notice_type, "")
+        content = content.replace("&#91;", "{")
+        content = content.replace("&#93;", "}")
+        content = content.format_map(content_data)
+        msg = None
+        if "@QQ" in content:
+            for i in content.split("@QQ"):
+                if not i:
+                    continue
+                msg += i + MessageSegment.at(user_id)
+            msg = msg[:-1]
+            if content.startswith("@QQ"):
+                msg = MessageSegment.at(user_id) + msg
+            if content.endswith("@QQ"):
+                msg = msg + MessageSegment.at(user_id)
+        else:
+            msg = content
+        return msg
+    except:
+        return f"{notice_type}通知内容写的不太对，管理员们重新设置一下吧！"
+
+
+async def handle_data_notice(group_id: int, notice_type: Literal["离群通知",
+                                                                 "进群通知"],
+                             message: str):
+    '''处理通知内容'''
+    content = message.split(" ", 1)[-1]
+    result, _ = content_check(content)
+    if not result:
+        return False
+    db.group_conf.update_one({"_id": group_id},
+                             {"$set": {
+                                 notice_type: content
+                             }}, True)
+    return True
+
+
+async def check_add_bot_to_group(bot: Bot, group_id: int) -> tuple:
+    '''检查加群条件'''
+
+    access_group_num = config.bot_conf.get("access_group_num", 50)
+    manage_group = config.bot_conf.get("manage_group", [])
+    out_of_work_bot = config.bot_conf.get("out_of_work_bot", [])
+    bot_id = int(bot.self_id)
+    group_list = await bot.get_group_list()
+    # 若群id不在管理群列表, 则需要进行加群条件过滤
+    if group_id not in manage_group:
+        if bot_id in out_of_work_bot:
+            return False, "老子放假了，你拉别的二猫子去！"
+        elif len(group_list) >= access_group_num:
+            return False, "老子加的群太多了，烦都烦死了，你拉别的二猫子去！"
+        else:
+            _con = db.group_conf.find_one({'_id': group_id})
+            if _con and _con.get("bot_id") != 0 != bot_id:
+                return False, f"群内已有二猫子（{_con.get('bot_id')}），一群不容二二猫，再见！"
+    return True, None
+
+
+async def add_bot_to_group(group_id: int, bot_id: int) -> None:
+    '''加群动作'''
+    db.group_conf.update_one(
+        {'_id': group_id},
+        {'$set': {
+            "group_switch": True,
+            "robot_active": 50,
+            "bot_id": bot_id
+        }}, True)
+    # 注册所有插件
+    plugins = list(get_loaded_plugins())
+    for one_plugin in plugins:
+        export = one_plugin.export
+        plugin_name = export.get("plugin_name")
+        if plugin_name is None:
+            continue
+        db.plugins_info.update_one({'_id': group_id}, {
+            '$set': {
+                one_plugin.name: {
+                    "module_name": one_plugin.name,
+                    "plugin_name": plugin_name,
+                    "command": export.get("plugin_command"),
+                    "usage": export.get("plugin_usage"),
+                    "status": export.get("default_status")
+                },
+            }
+        }, True)
+
+
+async def del_bot_to_group(bot: Bot, group_id, msg=None, exit_group=True):
+    '''退群动作'''
+    try:
+        bot_id = int(bot.self_id)
+        if exit_group:
+            if msg:
+                # 退群前发送消息
+                await bot.send_group_msg(group_id=group_id, message=msg)
+                time.sleep(0.5)
+            # 退群
+            await bot.set_group_leave(group_id=group_id, is_dismiss=False)
+        # 删除数据库中的机器人记录
+        db.group_conf.update_one({
+            '_id': group_id,
+            'bot_id': bot_id
+        }, {'$set': {
+            "bot_id": 0
+        }})
+        ret_msg = f"成功退群 {group_id}"
+    except:
+        ret_msg = f"退群 {group_id} 失败"
+    return ret_msg
+
+
+async def tianjianhongfu(bot: Bot, group_id, user_id, nickname):
+    # 天降鸿福事件
+    # 个人获得奖励概率递减
+    con = db.user_info.find_one({"_id": user_id})
+    user_lucky = 1.0
+    if con:
+        user_lucky = con.get("user_lucky", 1.0)
+    if user_lucky >= random.uniform(0, 50):
+        db.user_info.update_one({"_id": user_id},
+                                {"$set": {
+                                    "user_lucky": user_lucky * 0.7
+                                }}, True)
+        con = db.group_conf.find_one({"_id": group_id})
+        lucky = 0
+        if con:
+            lucky = con.get("lucky", 0)
+        add_gold = random.randint(1, (lucky + 1) * 10)
+        gold = 0
+        _con = db.user_info.find_one({'_id': user_id})
+        if _con:
+            gold = _con.get("gold", 0)
+        gold += add_gold
+        db.user_info.update_one({"_id": user_id}, {"$set": {
+            "gold": gold
+        }}, True)
+        msg = f"{nickname}天降鸿福，银两 +{add_gold}"
+        logger.debug(
+            f"<y>群{group_id}</y> | <g>{nickname}</g> | 天降鸿福 +{add_gold}")
+        await bot.send_group_msg(group_id=group_id, message=msg)
+        return True
+    return False
+
+
+async def play_picture(bot: Bot, event: GroupMessageEvent, group_id):
+    _con = db.group_conf.find_one({'_id': group_id})
+    if _con:
+        robot_active = _con.get("robot_active", 0)
+    else:
+        robot_active = 0
+    if robot_active >= random.randint(0, 500):
+        if random.choice((True, False)):
+            content = ""
+            for i in event.message:
+                if i.type == "text":
+                    content += i.data.get("text", "")
+            if not content:
+                return
+            msg = await chat(content)
+            logger.debug(f"<y>群({group_id})</y> | 搭话 | {msg}")
+        else:
+            cat_dir = os.path.join(data_dir, "img", "cat")
+            img_name = random.choice(os.listdir(cat_dir))
+            img_path = os.path.join(cat_dir, img_name)
+            logger.debug(f"<y>群({group_id})</y> | 斗图 | {img_path}")
+            with open(img_path, "rb") as f:
+                msg = MessageSegment.image(f.read())
+        await bot.send_group_msg(group_id=group_id, message=msg)

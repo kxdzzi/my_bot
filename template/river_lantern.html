@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <title>签到</title>
+    <style type="text/css">
+        @font-face{
+            font-family:youai;
+            src:url('font/youai.ttf');
+        }
+        div{
+            font-family: youai;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" style="width: 800px;background-image: url('img/bg.png');" id="main">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-3 text-center">
+                        <div class="alert" style="border: radius 50px;">
+                            <img src="http://q1.qlogo.cn/g?b=qq&nk={{user_id}}&s=160" class="img-thumbnail" style="border-radius:1.25rem">
+                        </div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <h1>{{ user_name }}<strong style="color:rgb(136, 57, 43);">的</strong>河灯</h1>
+                    </div>
+                    <div class="col-3">
+                        <img src="img/河灯.svg" height="180" width="180" style="transform:rotate(30deg); opacity:0.3">
+                    </div>
+                </div>
+                <div class="row">
+                    <table class="table table-striped">
+                        <thead>
+                          <tr>
+                              <th class="text-center" scope="col">序号</th>
+                              <th class="text-center" scope="col">日期</th>
+                              <th scope="col" width="500px">花<strong style="color:rgb(136, 57, 43);">笺</strong>内容</th>
+                              <th class="text-center" scope="col">被看次数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for data in datas %}
+                                {% if data.is_expired %}
+                                <tr class="text-secondary">
+                                    <td class="text-center">{{data.index_num}}</th>
+                                    <td class="text-center">{{data.datetime}}</th>
+                                    <td>{{data.content}}</th>
+                                    <td class="text-center">{{data.views_num}}</th>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td class="text-center">{{data.index_num}}</th>
+                                    <td class="text-center">{{data.datetime}}</th>
+                                    <td>{{data.content}}</th>
+                                    <td class="text-center">{{data.views_num}}</th>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                      </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <p class="text-center text-secondary">只有三天内的投放河灯才能被捡到</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

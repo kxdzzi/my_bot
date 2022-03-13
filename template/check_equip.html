@@ -1,0 +1,48 @@
+<doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+
+    <title>装备</title>
+    <style type="text/css">
+        @font-face{
+            font-family:youai;
+            src:url('font/pinyin.ttf');
+        }
+        .equip{
+            font-family: youai;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main"  style="width: 300px;padding: 20px;background-image: url('img/bg.png');">
+        <div>
+            <h2 class="equip">【{{ _id }}】<span style="font-size: 17px;">({{ 装备分数 }})</span></h2>
+        </div>
+        <br>
+        <div style="font-size: 17px;padding-left:20px">
+            <div>
+                <div>持有人：<span style="color: rgb(136, 57, 43);">{{ 持有人 }}</span></div>
+            </div>
+            <br>
+            <div>
+                {% for i in 基础属性 %}
+                <div>{{ i }}：<span style="color: rgb(19, 121, 116);">{{ 基础属性[i] }}</span></div>
+                {% endfor %}
+            </div>
+            <br>
+            <div >
+                {% for i in 附加属性 %}
+                <div>{{ i }}：<span style="color: rgb(56, 121, 19);">{{ 附加属性[i] }}</span></div>
+                {% endfor %}
+            </div>
+            <br>
+            <p style="font-size: 14px;color: #aaa;">{{ 打造人 }}于 {{打造日期}} 打造</p>
+        </div>
+    </div>
+</body>
+</html>

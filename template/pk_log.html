@@ -1,0 +1,27 @@
+<doctype html>
+    <html lang="zh-CN">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="./css/bootstrap.min.css">
+        <title>战斗记录</title>
+        <style type="text/css">
+            @font-face{
+                font-family:youai;
+                src:url('font/youai.ttf');
+            }
+            div{
+                font-family: youai;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="main"  style="width: 600px;background-image: url('img/bg.png');">
+            <div style="padding:30px">
+                {% for i in 战斗记录 %}
+                    <p>{{ i }}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+
+    <script src="data/{{ server_name }}"></script>
+    <script src="js/echarts.min.js"></script>
+    <script src="js/jquery.min.js"></script>
+    <title>金价</title>
+</head>
+
+<body>
+    <div id="main"  style="text-align:center;width: 800px;padding: 10px;">
+        <div style="text-align:center; margin:10px">
+            <h3><img src="./img/jx3.ico" height="50" width="50"> <strong></strong></h3>
+        </div>
+        <table class="table table-striped">
+            <thead>
+              <tr class="table-dark">
+                <th scope="col">日期</th>
+                <th scope="col">万宝楼</th>
+                <th scope="col">贴吧</th>
+                <th scope="col">悠悠</th>
+                <th scope="col">5173</th>
+                <th scope="col">嘟嘟</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+          <br>
+        <div id="gold_line"  style="width: 780px;height:500px;"></div>
+    </div>
+</body>
+<script src="js/line-marker.js"></script>
+</html>
