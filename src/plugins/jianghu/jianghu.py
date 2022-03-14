@@ -71,7 +71,7 @@ class PK(Skill):
         msg = ""
         if con := db.user_info.find_one({"_id": 败方id}):
             gold = con.get("gold", 0)
-        if gold:
+        if gold > 10:
             抢走金额 = random.randint(1, int(gold * 0.1))
             self.抢走银两(胜方id, 败方id, 抢走金额)
             msg = f"【{胜方名称}】抢走了【{败方名称}】 {抢走金额} 两银子"
@@ -122,7 +122,7 @@ class PK(Skill):
         gold = 0
         if con := db.user_info.find_one({"_id": 重伤者}):
             gold = con.get("gold", 0)
-        if gold:
+        if gold > 10:
             抢走金额 = random.randint(1, int(gold * 0.1))
             self.抢走银两(0, 重伤者, 抢走金额)
         db.jianghu.update_one({"_id": 重伤者}, {"$set": {
