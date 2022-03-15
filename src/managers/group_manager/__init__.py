@@ -121,7 +121,7 @@ archive = db.client["archive"]
 @event_postprocessor
 async def _(bot: Bot, event: GroupMessageEvent) -> None:
     """
-    随机事件分发
+    群消息总入口
     """
     group_id = event.group_id
     if group_id in manage_group:
@@ -133,13 +133,6 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
     nickname = event.sender.nickname
     message = event.raw_message
     sent_time = datetime.datetime.now()
-    # 记录群最后发言时间
-    db.group_conf.update_one({
-        "_id": group_id,
-    }, {"$set": {
-        "bot_id": bot_id,
-        "last_sent": sent_time
-    }}, True)
     chat_log = archive[sent_time.strftime("chat-log-%Y-%m")]
     chat_log.insert_one({
         "bot_id": bot_id,
@@ -150,6 +143,15 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
         "sent_time": sent_time,
         "message": message
     })
+    if not db.group_conf.find_one({"_id": group_id}).get("group_switch"):
+        return
+    # 记录群最后发言时间
+    db.group_conf.update_one({
+        "_id": group_id,
+    }, {"$set": {
+        "bot_id": bot_id,
+        "last_sent": sent_time
+    }}, True)
     if len(message) >= 10:
         if await source.tianjianhongfu(bot, group_id, user_id, nickname):
             return
