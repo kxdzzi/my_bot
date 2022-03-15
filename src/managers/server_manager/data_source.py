@@ -50,8 +50,8 @@ async def check_group(group_id: int, bot: Bot):
             "last_sent": datetime.now()
         }}, True)
         return
-    if (datetime.now() - last_sent).days > 7:
-        msg = "我大哥喊我回家吃饭，盈尺江湖，有缘再会！"
+    if (datetime.now() - last_sent).days > 5:
+        msg = "都五天没人跟我玩了，我还是走了吧。盈尺江湖，有缘再会！"
         db.group_conf.update_one({'_id': group_id}, {'$set': {
             "bot_id": 0
         }}, True)
