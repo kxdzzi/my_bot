@@ -43,11 +43,13 @@ class PK(Skill):
             elif debuff["type"] == "控制":
                 debuff["控制"]()
 
-    def 发动攻击(self, 攻: UserInfo, 守: UserInfo):
+    def 发动攻击(self, 攻: UserInfo, 守: UserInfo, 当前回合: int):
         攻方主动技能槽位 = [i for i in 攻.基础属性["武学"][:3] if i]
         self.战斗记录(f"【{攻.名称}】行动")
         if 攻方主动技能槽位:
             攻方主动技能 = random.choice(攻方主动技能槽位)
+            if 当前回合 == 0:
+                攻方主动技能 = 攻方主动技能槽位[0]
             if self.skill[攻方主动技能]["type"] == "主动招式":
                 重伤信息 = self.skill[攻方主动技能]["招式"](攻, 守)
             else:
@@ -312,22 +314,22 @@ class PK(Skill):
         if 守方.基础属性["重伤状态"]:
             return "对方已重伤，无法进攻"
         回合数 = {"切磋": 10, "偷袭": 10, "死斗": 50, "世界首领": 5, "秘境首领": 10}
-        for i in range(回合数[action]):
-            self.战斗记录(f"---------------- 第 {i+1} 回合 --------------")
+        for 当前回合 in range(回合数[action]):
+            self.战斗记录(f"---------------- 第 {当前回合+1} 回合 --------------")
             self.compute_buff(攻方)
             self.compute_buff(守方)
             self.compute_debuff(攻方, 守方)
             self.compute_debuff(守方, 攻方)
             if random.randint(1, 攻方.当前状态['速度']) > random.randint(
                     1, 守方.当前状态['速度']):
-                if self.发动攻击(攻方, 守方):
+                if self.发动攻击(攻方, 守方, 当前回合):
                     break
-                if self.发动攻击(守方, 攻方):
+                if self.发动攻击(守方, 攻方, 当前回合):
                     break
             else:
-                if self.发动攻击(守方, 攻方):
+                if self.发动攻击(守方, 攻方, 当前回合):
                     break
-                if self.发动攻击(攻方, 守方):
+                if self.发动攻击(攻方, 守方, 当前回合):
                     break
         self.战斗记录(f"------------------ 战斗结束 -----------------")
         data = self.战斗结算(action, 攻方, 守方)
