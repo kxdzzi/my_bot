@@ -67,7 +67,7 @@ class PK(Skill):
             gold = con.get("gold", 0)
         if gold > 10:
             抢走金额 = random.randint(1, int(gold * 0.1))
-            self.抢走银两(胜方id, 败方id, 抢走金额)
+            await self.抢走银两(胜方id, 败方id, 抢走金额)
             msg = f"【{胜方名称}】抢走了【{败方名称}】 {抢走金额} 两银子"
         db.jianghu.update_one({"_id": 败方id}, {"$set": {
             "重伤状态": True,
@@ -118,7 +118,7 @@ class PK(Skill):
             gold = con.get("gold", 0)
         if gold > 10:
             抢走金额 = random.randint(1, int(gold * 0.1))
-            self.抢走银两(0, 重伤者, 抢走金额)
+            await self.抢走银两(0, 重伤者, 抢走金额)
         db.jianghu.update_one({"_id": 重伤者}, {"$set": {
             "重伤状态": True,
         }}, True)
@@ -272,7 +272,7 @@ class PK(Skill):
                 data["攻方"]["平"] = True
                 data["守方"]["平"] = True
                 获得银两 = random.randint(1, 攻方.本次伤害 // 5)
-                self.抢走银两(攻方_id, 0, 获得银两)
+                await self.抢走银两(攻方_id, 0, 获得银两)
                 if not data.get("结算"):
                     data["结算"] = ""
                 data["结算"] += f"{攻方.基础属性['名称']} 对 {守方.基础属性['名称']} 造成了 {攻方.本次伤害} 伤害，获得银两 {获得银两}"
