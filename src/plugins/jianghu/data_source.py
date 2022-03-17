@@ -584,7 +584,7 @@ async def comprehension_skill(user_id, res):
     已领悟武学数量 = len(已领悟武学)
     if 已领悟武学数量 == 全部武学数量:
         return "你已经学会了所有武学，不需要再领悟了！"
-    elif random.randint(1, 500) < 银两:
+    elif random.randint(1, 100) < 银两:
         武学 = random.choice(全部武学)
         if 武学 in 已领悟武学:
             return "领悟失败"
@@ -594,6 +594,28 @@ async def comprehension_skill(user_id, res):
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -银两}}, True)
     db.jianghu.update_one({"_id": user_id}, {"$set": {"已领悟武学": 已领悟武学}}, True)
     return f"花费{银两}两银子，成功领悟武学：{武学}"
+
+
+async def impart_skill(user_id, at_qq, 武学):
+    """传授武学"""
+    user_info = UserInfo(user_id)
+    if 武学 not in user_info.基础属性.get("已领悟武学", []):
+        return "你都没学会这门招式，怎么传授给别人？"
+    at_info = UserInfo(at_qq)
+    被传授方武学 = at_info.基础属性.get("已领悟武学", [])
+    if 武学 in 被传授方武学:
+        return "对方已经学会了该武学，不用花冤枉钱了。"
+    拥有银两 = 0
+    con = db.user_info.find_one({"_id": user_id})
+    if con:
+        拥有银两 = con.get("gold", 0)
+    需要花费银两 = 1000
+    if 拥有银两 < 需要花费银两:
+        return f"传授武学需要{需要花费银两}两银子，你的银两不足"
+    被传授方武学.append(武学)
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -需要花费银两}}, True)
+    db.jianghu.update_one({"_id": at_qq}, {"$set": {"已领悟武学": 被传授方武学}}, True)
+    return f"花费{需要花费银两}两银子，成功传授武学：{武学}"
 
 
 async def pk_log(战斗编号):

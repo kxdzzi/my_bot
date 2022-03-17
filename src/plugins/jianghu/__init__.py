@@ -43,6 +43,11 @@ comprehension_skill = on_regex(r"^领悟武学 \d+$",
                                block=True)
 set_skill = on_regex(r"^配置武学 .+ \d$", permission=GROUP, priority=5, block=True)
 
+impart_skill = on_regex(r"^传授武学 *\[CQ:at,qq=\d+\] *(.+?)$",
+                        permission=GROUP,
+                        priority=5,
+                        block=True)
+
 pk = on_regex(r"^(切磋|偷袭|死斗) *\[CQ:at,qq=\d+\] *$",
               permission=GROUP,
               priority=5,
@@ -89,6 +94,7 @@ my_commodity = on_regex(r"^我的(商品|物品)\d*$", permission=GROUP, priorit
 start_dungeon = on_regex(r"^(秘境|秘境首领) .+$", permission=GROUP, priority=5, block=True)
 view_dungeon = on_regex(r"^查看秘境 .+$", permission=GROUP, priority=5, block=True)
 dungeon_progress = on_regex(r"^秘境进度$", permission=GROUP, priority=5, block=True)
+
 
 
 def get_content(event: GroupMessageEvent) -> str:
@@ -409,6 +415,28 @@ async def _(event: GroupMessageEvent):
     战斗编号 = d_list[0]
     msg = await source.pk_log(战斗编号)
     await pk_log.finish(msg)
+
+
+@impart_skill.handle()
+async def _(event: GroupMessageEvent):
+    '''传授武学'''
+    user_id = event.user_id
+    at_member_obj = re.compile(r"^传授武学 *\[CQ:at,qq=(\d*)\] *(.+?)$")
+    at_member_list = at_member_obj.findall(event.raw_message)
+    if not at_member_list:
+        msg = "需要艾特传授目标"
+        await impart_skill.finish(msg)
+    at_qq = int(at_member_list[0][0])
+    武学 = at_member_list[0][1]
+    if at_qq == user_id:
+        msg = "不可以传授给自己武学"
+        await impart_skill.finish(msg)
+    if at_qq < 100000:
+        msg = "传授目标不正确"
+        await impart_skill.finish(msg)
+
+    msg = await source.impart_skill(user_id, at_qq, 武学)
+    await impart_skill.finish(msg)
 
 
 @pk.handle()
