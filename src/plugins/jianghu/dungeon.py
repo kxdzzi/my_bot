@@ -68,4 +68,4 @@ async def 挑战秘境(user_id, 首领名称):
     if not 首领编号:
         return "找不到首领名称或是未通关前置秘境"
     战斗 = PK()
-    return 战斗.main("秘境首领", user_id, 首领编号)
+    return await 战斗.main("秘境首领", user_id, 首领编号)

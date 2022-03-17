@@ -22,7 +22,7 @@ async def world_boss(user_id, 世界首领名称):
         return msg
     await search_once(user_id, app_name)
     战斗 = PK()
-    return 战斗.main("世界首领", user_id, world_boss_dict[世界首领名称])
+    return await 战斗.main("世界首领", user_id, world_boss_dict[世界首领名称])
 
 
 def start_resurrection_world_boss():

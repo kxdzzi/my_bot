@@ -42,6 +42,7 @@ comprehension_skill = on_regex(r"^领悟武学 \d+$",
                                priority=5,
                                block=True)
 set_skill = on_regex(r"^配置武学 .+ \d$", permission=GROUP, priority=5, block=True)
+forgotten_skill = on_regex(r"^遗忘武学 .+$", permission=GROUP, priority=5, block=True)
 
 impart_skill = on_regex(r"^传授武学 *\[CQ:at,qq=\d+\] *(.+?)$",
                         permission=GROUP,
@@ -383,6 +384,13 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     user_id = event.user_id
     msg = await source.comprehension_skill(user_id, res)
     await comprehension_skill.finish(msg)
+
+@forgotten_skill.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    """遗忘武学"""
+    user_id = event.user_id
+    msg = await source.forgotten_skill(user_id, res)
+    await forgotten_skill.finish(msg)
 
 
 @set_skill.handle()

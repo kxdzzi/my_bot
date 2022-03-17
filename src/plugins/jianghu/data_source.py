@@ -564,6 +564,27 @@ async def set_skill(user_id, res):
     return f"配置武学{skill_name}成功！"
 
 
+async def forgotten_skill(user_id, res):
+    """遗忘武学"""
+    if len(res) != 1:
+        return "输入格式错误"
+    skill_name = res[0]
+    con = db.jianghu.find_one({"_id": user_id})
+    已领悟武学 = []
+    武学 = [""] * 5
+    if con:
+        已领悟武学 = con.get("已领悟武学", [])
+        武学 = con.get("武学", 武学)
+    if skill_name not in 已领悟武学:
+        return "你都没学会，忘什么忘？"
+    for n, i in enumerate(武学):
+        if i == skill_name:
+            武学[n] = ""
+    已领悟武学.remove(skill_name)
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"武学": 武学, "已领悟武学": 已领悟武学}}, True)
+    return f"遗忘武学{skill_name}成功！"
+
+
 async def comprehension_skill(user_id, res):
     """领悟武学"""
     if not res:
@@ -588,7 +609,7 @@ async def comprehension_skill(user_id, res):
         return "你已经学会了所有武学，不需要再领悟了！"
 
     # 检查领悟武学cd
-    n_cd_time = 300
+    n_cd_time = 60
     app_name = "领悟武学"
     flag, cd_time = await search_record(user_id, app_name, n_cd_time)
     if not flag:
@@ -651,7 +672,7 @@ async def pk_log(战斗编号):
 
 async def pk(动作, user_id, at_qq):
     战斗 = PK()
-    data = 战斗.main(动作, user_id, at_qq)
+    data = await 战斗.main(动作, user_id, at_qq)
     if isinstance(data, str):
         return data
     pagename = "pk.html"
