@@ -87,6 +87,8 @@ buy_commodity = on_regex(r"^购买(商品|物品) \d+$", permission=GROUP, prior
 my_commodity = on_regex(r"^我的(商品|物品)\d*$", permission=GROUP, priority=5, block=True)
 
 start_dungeon = on_regex(r"^(秘境|秘境首领) .+$", permission=GROUP, priority=5, block=True)
+view_dungeon = on_regex(r"^查看秘境 .+$", permission=GROUP, priority=5, block=True)
+dungeon_progress = on_regex(r"^秘境进度$", permission=GROUP, priority=5, block=True)
 
 
 def get_content(event: GroupMessageEvent) -> str:
@@ -380,6 +382,20 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     user_id = event.user_id
     msg = await source.start_dungeon(user_id, res)
     await start_dungeon.finish(msg)
+
+@view_dungeon.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    """秘境首领"""
+    user_id = event.user_id
+    msg = await source.view_dungeon(user_id, res)
+    await view_dungeon.finish(msg)
+
+@dungeon_progress.handle()
+async def _(event: GroupMessageEvent):
+    """秘境首领"""
+    user_id = event.user_id
+    msg = await source.dungeon_progress(user_id)
+    await dungeon_progress.finish(msg)
 
 
 @pk_log.handle()

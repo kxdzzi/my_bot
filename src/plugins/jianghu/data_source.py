@@ -18,7 +18,7 @@ from src.plugins.jianghu.shop import shop
 from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 材料等级表
 from src.plugins.jianghu.jianghu import PK
 from src.plugins.jianghu.world_boss import world_boss, start_resurrection_world_boss
-from src.plugins.jianghu.dungeon import 挑战秘境
+from src.plugins.jianghu.dungeon import 挑战秘境, 查看秘境, 秘境进度
 
 
 client = AsyncClient()
@@ -510,7 +510,7 @@ async def pk_world_boss(user_id, res):
 
 
 async def start_dungeon(user_id, res):
-    """世界首领"""
+    """挑战秘境"""
     秘境首领 = ""
     if res:
         秘境首领 = res[0]
@@ -520,6 +520,19 @@ async def start_dungeon(user_id, res):
     pagename = "pk.html"
     img = await browser.template_to_image(pagename=pagename, **data)
     return MessageSegment.image(img)
+
+
+async def view_dungeon(user_id, res):
+    """查看秘境"""
+    秘境名称 = ""
+    if res:
+        秘境名称 = res[0]
+    return await 查看秘境(user_id, 秘境名称)
+
+
+async def dungeon_progress(user_id):
+    """秘境进度"""
+    return await 秘境进度(user_id)
 
 
 async def resurrection_world_boss():
