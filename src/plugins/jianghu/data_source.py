@@ -18,6 +18,7 @@ from src.plugins.jianghu.shop import shop
 from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 材料等级表
 from src.plugins.jianghu.jianghu import PK
 from src.plugins.jianghu.world_boss import world_boss, start_resurrection_world_boss
+from src.utils.cooldown_time import search_record, search_once
 from src.plugins.jianghu.dungeon import 挑战秘境, 查看秘境, 秘境进度
 
 
@@ -576,6 +577,7 @@ async def comprehension_skill(user_id, res):
         拥有银两 = con.get("gold", 0)
     if 拥有银两 < 银两:
         return "你的银两不足"
+
     user_info = UserInfo(user_id)
     已领悟武学 = user_info.基础属性.get("已领悟武学", [])
     sl = Skill()
@@ -584,14 +586,24 @@ async def comprehension_skill(user_id, res):
     已领悟武学数量 = len(已领悟武学)
     if 已领悟武学数量 == 全部武学数量:
         return "你已经学会了所有武学，不需要再领悟了！"
-    elif random.randint(1, 100) < 银两:
+
+    # 检查领悟武学cd
+    n_cd_time = 300
+    app_name = "领悟武学"
+    flag, cd_time = await search_record(user_id, app_name, n_cd_time)
+    if not flag:
+        msg = f"{cd_time} 后才可以继续领悟"
+        return msg
+    await search_once(user_id, app_name)
+
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -银两}}, True)
+    if random.randint(1, 100) < 银两:
         武学 = random.choice(全部武学)
         if 武学 in 已领悟武学:
             return "领悟失败"
     else:
         return "领悟失败"
     已领悟武学.append(武学)
-    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -银两}}, True)
     db.jianghu.update_one({"_id": user_id}, {"$set": {"已领悟武学": 已领悟武学}}, True)
     return f"花费{银两}两银子，成功领悟武学：{武学}"
 
@@ -635,6 +647,7 @@ async def pk_log(战斗编号):
     pagename = "pk_log.html"
     img = await browser.template_to_image(pagename=pagename, **data)
     return MessageSegment.image(img)
+
 
 async def pk(动作, user_id, at_qq):
     战斗 = PK()
