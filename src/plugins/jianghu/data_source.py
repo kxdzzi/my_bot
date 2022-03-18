@@ -748,12 +748,20 @@ async def pk(动作, user_id, at_qq):
     return MessageSegment.image(img)
 
 
-async def give(user_id, at_qq, 物品列表, 数量=1):
+async def give(user_id, at_qq, 物品列表):
     材料re = re.compile(r"^([赤橙黄绿青蓝紫彩][金木水火土])$")
     图纸re = re.compile(r"^([武器外装饰品]{2}\d+)$")
     装备_re = re.compile(r"^(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{0,1})$")
     msg = "赠送完成"
     for 物品 in 物品列表:
+        数量 = 1
+        if "*" in 物品:
+            物品, 数量 = 物品.split("*")
+            数量 = int(数量.strip())
+            if 数量 < 1:
+                msg += "\n赠送失败：物品数量格式不对"
+                continue
+        物品 = 物品.strip()
         if 物品 in shop:
             类型 = "物品"
         elif 材料re.match(物品):
