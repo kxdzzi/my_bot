@@ -791,6 +791,7 @@ async def give(user_id, at_qq, 物品):
             db.knapsack.update_one({"_id": at_qq}, {"$set": {
                 类型: at_data
             }}, True)
+        msg = f"{物品}赠送成功！"
     else:
         if len(物品) == 2:
             datas = db.equip.find({"持有人": user_id, "标记": 物品})
