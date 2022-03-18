@@ -748,68 +748,74 @@ async def pk(动作, user_id, at_qq):
     return MessageSegment.image(img)
 
 
-async def give(user_id, at_qq, 物品, 数量=1):
-    材料re = re.compile(r"([赤橙黄绿青蓝紫彩][金木水火土])")
-    图纸re = re.compile(r"([武器外装饰品]{2}\d+)")
-    装备_re = re.compile(r"(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{0,1})")
-    if 物品 in shop:
-        类型 = "物品"
-    elif 材料re.match(物品):
-        类型 = "材料"
-    elif 图纸re.match(物品):
-        类型 = "图纸"
-    elif 装备_re.match(物品):
-        类型 = "装备"
-    else:
-        return "你别逗我好不好?"
-    if 类型 in ["材料", "图纸", "物品"]:
-        con = db.knapsack.find_one({"_id": user_id})
-        if not con:
-            return "你的物品数量不足，请检查背包。"
-        if 类型 == "物品":
-            if con.get(物品, 0) < 数量:
-                return "你的物品数量不足，请检查背包。"
-            db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
-            db.knapsack.update_one({"_id": at_qq}, {"$inc": {物品: 数量}}, True)
+async def give(user_id, at_qq, 物品列表, 数量=1):
+    材料re = re.compile(r"^([赤橙黄绿青蓝紫彩][金木水火土])$")
+    图纸re = re.compile(r"^([武器外装饰品]{2}\d+)$")
+    装备_re = re.compile(r"^(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{0,1})$")
+    msg = "赠送完成"
+    for 物品 in 物品列表:
+        if 物品 in shop:
+            类型 = "物品"
+        elif 材料re.match(物品):
+            类型 = "材料"
+        elif 图纸re.match(物品):
+            类型 = "图纸"
+        elif 装备_re.match(物品):
+            类型 = "装备"
         else:
-            data = con.get(类型, {})
-            if data.get(物品, 0) < 数量:
-                return "你的物品数量不足，请检查背包。"
-            data[物品] -= 数量
-            if data[物品] <= 0:
-                del data[物品]
-            at_con = db.knapsack.find_one({"_id": at_qq})
-            at_data = {物品: 0}
-            if at_con:
-                at_data = at_con.get(类型, {物品: 0})
-            if not at_data.get(物品):
-                at_data[物品] = 0
-            at_data[物品] += 数量
-            db.knapsack.update_one({"_id": user_id}, {"$set": {
-                类型: data
-            }}, True)
-            db.knapsack.update_one({"_id": at_qq}, {"$set": {
-                类型: at_data
-            }}, True)
-        msg = f"{物品}*{数量}赠送成功！"
-    else:
-        if len(物品) == 2:
-            datas = db.equip.find({"持有人": user_id, "标记": 物品})
+            msg += "\n赠送失败：物品名称不对"
+            continue
+        if 类型 in ["材料", "图纸", "物品"]:
+            con = db.knapsack.find_one({"_id": user_id})
+            if not con:
+                msg += f"\n赠送失败：{物品}数量不足"
+                continue
+            if 类型 == "物品":
+                if con.get(物品, 0) < 数量:
+                    msg += f"\n赠送失败：{物品}数量不足"
+                    continue
+                db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
+                db.knapsack.update_one({"_id": at_qq}, {"$inc": {物品: 数量}}, True)
+            else:
+                data = con.get(类型, {})
+                if data.get(物品, 0) < 数量:
+                    msg += f"\n赠送失败：{物品}数量不足"
+                    continue
+                data[物品] -= 数量
+                if data[物品] <= 0:
+                    del data[物品]
+                at_con = db.knapsack.find_one({"_id": at_qq})
+                at_data = {物品: 0}
+                if at_con:
+                    at_data = at_con.get(类型, {物品: 0})
+                if not at_data.get(物品):
+                    at_data[物品] = 0
+                at_data[物品] += 数量
+                db.knapsack.update_one({"_id": user_id}, {"$set": {
+                    类型: data
+                }}, True)
+                db.knapsack.update_one({"_id": at_qq}, {"$set": {
+                    类型: at_data
+                }}, True)
+            msg += f"\n{物品}*{数量}赠送成功！"
         else:
-            datas = db.equip.find({"_id": 物品})
-        if not datas:
-            return "查不到此装备"
-        msg = "赠送完成"
-        for data in datas:
-            if data["持有人"] != user_id:
-                msg += f"\n{data['_id']}赠送失败：你没有这件装备或是该装备正在售卖。"
+            if len(物品) == 2:
+                datas = db.equip.find({"持有人": user_id, "标记": 物品})
+            else:
+                datas = db.equip.find({"_id": 物品})
+            if not datas:
+                msg += f"\n赠送失败：名称不对"
                 continue
-            装备 = db.jianghu.find_one({"_id": user_id})["装备"]
-            if data['_id'] == 装备[data["类型"]]:
-                msg += f"\n{data['_id']}赠送失败：该装备正在使用，无法赠送"
-                continue
-            msg += f"\n{data['_id']}赠送成功！"
-            db.equip.update_one({"_id": data["_id"]}, {"$set": {"持有人": at_qq}}, True)
+            for data in datas:
+                if data["持有人"] != user_id:
+                    msg += f"\n{data['_id']}赠送失败：你没有这件装备或是该装备正在售卖。"
+                    continue
+                装备 = db.jianghu.find_one({"_id": user_id})["装备"]
+                if data['_id'] == 装备[data["类型"]]:
+                    msg += f"\n赠送失败：{data['_id']}正在使用，无法赠送"
+                    continue
+                msg += f"\n{data['_id']}赠送成功！"
+                db.equip.update_one({"_id": data["_id"]}, {"$set": {"持有人": at_qq}}, True)
     return msg
 
 

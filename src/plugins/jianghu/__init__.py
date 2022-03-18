@@ -520,19 +520,24 @@ async def _(event: GroupMessageEvent):
     if user_id == 80000000:
         await give.finish("这条路是孤独的，只能前行，退无可退。")
     at_member_obj = re.compile(r"^赠送 *\[CQ:at,qq=(\d*)\] *(.+?)( \d+){0,1}$")
+    at_member_obj_2 = re.compile(r"^赠送 *\[CQ:at,qq=(\d*)\] *(.+?)$")
     at_member_list = at_member_obj.findall(event.raw_message)
+    at_member_list_2 = at_member_obj_2.findall(event.raw_message)
     if not at_member_list or len(at_member_list[0]) < 2:
         msg = "赠送格式错误"
         await give.finish(msg)
     at_qq = int(at_member_list[0][0])
-    物品 = at_member_list[0][1]
+    物品列表 = [at_member_list[0][1]]
     数量 = 1
     if at_member_list[0][2]:
         数量 = int(at_member_list[0][2].strip())
+    else:
+        物品列表 = at_member_list_2[0][1].split()
     if at_qq == user_id:
         msg = "不能给自己送东西"
         await give.finish(msg)
-    msg = await source.give(user_id, at_qq, 物品, 数量)
+
+    msg = await source.give(user_id, at_qq, 物品列表, 数量)
     await give.finish(msg)
 
 
