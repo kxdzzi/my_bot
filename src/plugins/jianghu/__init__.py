@@ -41,7 +41,10 @@ comprehension_skill = on_regex(r"^领悟武学 \d+$",
                                permission=GROUP,
                                priority=5,
                                block=True)
-set_skill = on_regex(r"^配置武学 .+ \d$", permission=GROUP, priority=5, block=True)
+set_skill = on_regex(r"^配置武学 .+ *\d{0,1}$", permission=GROUP, priority=5, block=True)
+view_skill = on_regex(r"^查看武学配置$", permission=GROUP, priority=5, block=True)
+save_skill = on_regex(r"^保存武学配置 .+$", permission=GROUP, priority=5, block=True)
+del_skill = on_regex(r"^删除武学配置 .+$", permission=GROUP, priority=5, block=True)
 forgotten_skill = on_regex(r"^遗忘武学 .+$", permission=GROUP, priority=5, block=True)
 
 impart_skill = on_regex(r"^传授武学 *\[CQ:at,qq=\d+\] *(.+?)$",
@@ -274,7 +277,8 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
 @check_gear.handle()
 async def _(bot: Bot, event: GroupMessageEvent, res=Depends(get_content)):
     """查看装备"""
-    msg = await source.check_gear(bot, res)
+    user_id = event.user_id
+    msg = await source.check_gear(user_id, res)
     await check_gear.finish(msg)
 
 
@@ -399,6 +403,27 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     user_id = event.user_id
     msg = await source.set_skill(user_id, res)
     await set_skill.finish(msg)
+
+@save_skill.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    """保存武学配置"""
+    user_id = event.user_id
+    msg = await source.save_skill(user_id, res)
+    await save_skill.finish(msg)
+
+@del_skill.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    """删除武学配置"""
+    user_id = event.user_id
+    msg = await source.del_skill(user_id, res)
+    await del_skill.finish(msg)
+
+@view_skill.handle()
+async def _(event: GroupMessageEvent):
+    """查看武学配置"""
+    user_id = event.user_id
+    msg = await source.view_skill(user_id)
+    await view_skill.finish(msg)
 
 
 @world_boss.handle()

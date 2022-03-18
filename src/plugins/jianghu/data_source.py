@@ -246,6 +246,7 @@ async def rebuild_equipment(user_id, 装备一名称, 装备二名称):
 
 
 async def build_equipment(user_id, res):
+    """打造装备"""
     if len(res.split()) != 3:
         return "输入错误"
     材料re = re.compile(" ([赤橙黄绿青蓝紫][金木水火土])")
@@ -449,7 +450,7 @@ async def my_gear(user_id, 内容):
     return MessageSegment.image(img)
 
 
-async def check_gear(bot, res):
+async def check_gear(user_id, res):
     """查看装备"""
     if not res:
         return "查看格式错误"
@@ -457,19 +458,28 @@ async def check_gear(bot, res):
     if gear_name.isdigit():
         if con := db.auction_house.find_one({"_id": int(gear_name)}):
             gear_name = con.get("名称", "")
-    data = db.equip.find_one({"_id": gear_name})
-    if not data:
-        return "查不到此装备"
-    打造人_info = UserInfo(data['打造人'])
-    data['打造人'] = 打造人_info.基础属性['名称']
-    if data['持有人'] == -1:
-        data['持有人'] = "售卖中"
+    if len(gear_name) == 2:
+        datas = db.equip.find({"持有人": user_id, "标记": gear_name})
     else:
-        持有人_info = UserInfo(data['持有人'])
-        data['持有人'] = 持有人_info.基础属性['名称']
-    data['打造日期'] = data['打造日期'].strftime("%Y-%m-%d")
+        datas = db.equip.find({"_id": gear_name})
+    if not datas:
+        return "查不到此装备"
+    ret_data_list = []
+    for data in datas:
+        打造人_info = UserInfo(data['打造人'])
+        data['打造人'] = 打造人_info.基础属性['名称']
+        if data['持有人'] == -1:
+            data['持有人'] = "售卖中"
+        else:
+            持有人_info = UserInfo(data['持有人'])
+            data['持有人'] = 持有人_info.基础属性['名称']
+        data['打造日期'] = data['打造日期'].strftime("%Y-%m-%d")
+        ret_data_list.append(data)
+    ret_data = {
+        "datas": ret_data_list
+    }
     pagename = "check_equip.html"
-    img = await browser.template_to_image(pagename=pagename, **data)
+    img = await browser.template_to_image(pagename=pagename, **ret_data)
     return MessageSegment.image(img)
 
 
@@ -543,25 +553,83 @@ async def resurrection_world_boss():
 
 async def set_skill(user_id, res):
     """配置武学"""
-    if len(res) != 2:
-        return "输入格式错误"
-    skill_name = res[0]
-    skill_index = int(res[1]) - 1
-    if skill_index > 4:
-        return "技能槽位不能大于5"
-    con = db.jianghu.find_one({"_id": user_id})
     已领悟武学 = []
     武学 = [""] * 5
+    武学配置 = {}
+    con = db.jianghu.find_one({"_id": user_id})
     if con:
         已领悟武学 = con.get("已领悟武学", [])
         武学 = con.get("武学", 武学)
-    if skill_name == "-":
-        skill_name = ""
-    elif skill_name not in 已领悟武学:
-        return "你没有学会该武学"
-    武学[skill_index] = skill_name
+        武学配置 = con.get("武学配置", 武学配置)
+    if len(res) == 1 and len(res[0]) == 2:
+        skill_name = res[0]
+        if skill_name not in 武学配置:
+            return "格式错误，或找不到该武学配置，请发送“查看武学配置”进行查看"
+        武学 = 武学配置[skill_name]
+    elif len(res) == 2:
+        skill_name = res[0]
+        skill_index = int(res[1]) - 1
+        if skill_index > 4:
+            return "技能槽位不能大于5"
+        if skill_name == "-":
+            skill_name = ""
+        elif skill_name not in 已领悟武学:
+            return "你没有学会该武学"
+        武学[skill_index] = skill_name
+    else:
+        return "格式输入错误，请发送“江湖”查看武学说明。"
     db.jianghu.update_one({"_id": user_id}, {"$set": {"武学": 武学}}, True)
     return f"配置武学{skill_name}成功！"
+
+
+async def save_skill(user_id, res):
+    """保存武学配置"""
+    if len(res) != 1 or len(res[0]) != 2:
+        return "输入格式错误，配置名称只能是两个字"
+    setting_name = res[0]
+    con = db.jianghu.find_one({"_id": user_id})
+    武学 = [""] * 5
+    武学配置 = {}
+    if con:
+        武学 = con.get("武学", 武学)
+        武学配置 = con.get("武学配置", 武学配置)
+    武学配置[setting_name] = 武学
+    if len(武学配置) > 10:
+        return "最多只能保存10套武学配置"
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"武学配置": 武学配置}}, True)
+    return f"保存武学配置{setting_name}成功！"
+
+
+async def view_skill(user_id):
+    """查看武学配置"""
+    con = db.jianghu.find_one({"_id": user_id})
+    user_info = UserInfo(user_id)
+    武学配置 = {}
+    if con:
+        武学配置 = con.get("武学配置", 武学配置)
+
+    if not 武学配置:
+        return "你没保存任何武学配置，发送“保存武学配置 名字”就可以保存当前武学配置了。"
+    msg = f"{user_info.名称}的武学配置"
+    for k, v in 武学配置.items():
+        msg += f"\n\n[{k}]\n{v}"
+    return msg
+
+
+async def del_skill(user_id, res):
+    """删除武学配置"""
+    if len(res) != 1 or len(res[0]) != 2:
+        return "输入格式错误，配置名称只能是两个字"
+    setting_name = res[0]
+    con = db.jianghu.find_one({"_id": user_id})
+    武学配置 = {}
+    if con:
+        武学配置 = con.get("武学配置", 武学配置)
+    if setting_name not in 武学配置:
+        return "你没有该武学配置，请发送查看武学配置进行查看"
+    del 武学配置[setting_name]
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"武学配置": 武学配置}}, True)
+    return f"删除武学配置{setting_name}成功！"
 
 
 async def forgotten_skill(user_id, res):
@@ -683,15 +751,15 @@ async def pk(动作, user_id, at_qq):
 async def give(user_id, at_qq, 物品):
     材料re = re.compile(r"([赤橙黄绿青蓝紫][金木水火土])")
     图纸re = re.compile(r"([武器外装饰品]{2}\d+)")
-    装备_re = re.compile(r"(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环])")
-    if 材料re.match(物品):
+    装备_re = re.compile(r"(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{0,1})")
+    if 物品 in shop:
+        类型 = "物品"
+    elif 材料re.match(物品):
         类型 = "材料"
     elif 图纸re.match(物品):
         类型 = "图纸"
     elif 装备_re.match(物品):
         类型 = "装备"
-    elif 物品 in shop:
-        类型 = "物品"
     else:
         return "你别逗我好不好?"
     if 类型 in ["材料", "图纸", "物品"]:
@@ -724,18 +792,24 @@ async def give(user_id, at_qq, 物品):
                 类型: at_data
             }}, True)
     else:
-        con = db.equip.find_one({"_id": 物品})
-        if not con:
-            return "不存在这件装备"
-        if con["持有人"] != user_id:
-            return "你没有这件装备"
-        装备 = db.jianghu.find_one({"_id": user_id})["装备"]
-        if 物品 == 装备[con["类型"]]:
-            return "该装备正在使用，无法赠送"
-            装备[con["类型"]] = ""
-            db.jianghu.update_one({"_id": user_id}, {"$set": {"装备": 装备}})
-        db.equip.update_one({"_id": 物品}, {"$set": {"持有人": at_qq}}, True)
-    return "赠送成功"
+        if len(物品) == 2:
+            datas = db.equip.find({"持有人": user_id, "标记": 物品})
+        else:
+            datas = db.equip.find({"_id": 物品})
+        if not datas:
+            return "查不到此装备"
+        msg = "赠送完成"
+        for data in datas:
+            if data["持有人"] != user_id:
+                msg += f"\n{data['_id']}赠送失败：你没有这件装备或是该装备正在售卖。"
+                continue
+            装备 = db.jianghu.find_one({"_id": user_id})["装备"]
+            if data['_id'] == 装备[data["类型"]]:
+                msg += f"\n{data['_id']}赠送失败：该装备正在使用，无法赠送"
+                continue
+            msg += f"\n{data['_id']}赠送成功！"
+            db.equip.update_one({"_id": data["_id"]}, {"$set": {"持有人": at_qq}}, True)
+    return msg
 
 
 async def healing(user_id, target_id):
