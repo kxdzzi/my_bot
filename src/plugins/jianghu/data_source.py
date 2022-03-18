@@ -750,7 +750,7 @@ async def pk(动作, user_id, at_qq):
 
 async def give(user_id, at_qq, 物品列表):
     材料re = re.compile(r"^([赤橙黄绿青蓝紫彩][金木水火土])$")
-    图纸re = re.compile(r"^([武器外装饰品]{2}\d+)$")
+    图纸re = re.compile(r"^([武器外装饰品]{2}\d+)$|^(图纸(\d+-\d+){0,1})$")
     装备_re = re.compile(r"^(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{0,1})$")
     msg = "赠送完成"
     for 物品 in 物品列表:
@@ -782,30 +782,73 @@ async def give(user_id, at_qq, 物品列表):
                 if con.get(物品, 0) < 数量:
                     msg += f"\n赠送失败：{物品}数量不足"
                     continue
+                msg += f"\n{物品}*{数量}赠送成功！"
                 db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
                 db.knapsack.update_one({"_id": at_qq}, {"$inc": {物品: 数量}}, True)
             else:
+                # 重置双方物品
                 data = con.get(类型, {})
-                if data.get(物品, 0) < 数量:
-                    msg += f"\n赠送失败：{物品}数量不足"
-                    continue
-                data[物品] -= 数量
-                if data[物品] <= 0:
-                    del data[物品]
                 at_con = db.knapsack.find_one({"_id": at_qq})
-                at_data = {物品: 0}
-                if at_con:
-                    at_data = at_con.get(类型, {物品: 0})
-                if not at_data.get(物品):
-                    at_data[物品] = 0
-                at_data[物品] += 数量
-                db.knapsack.update_one({"_id": user_id}, {"$set": {
-                    类型: data
-                }}, True)
-                db.knapsack.update_one({"_id": at_qq}, {"$set": {
-                    类型: at_data
-                }}, True)
-            msg += f"\n{物品}*{数量}赠送成功！"
+
+                if 类型 == "图纸" and "-" in 物品:
+                    下限, 上限 = re.findall(r"(\d+)", 物品)
+                    下限, 上限 = int(下限), int(上限)
+                    if 下限 > 上限:
+                        下限, 上限 = 上限, 下限
+                    可赠送物品数量 = 0
+                    可赠送物品 = []
+                    for k, v in data.items():
+                        if 下限 <= int(k[2:]) <= 上限:
+                            可赠送物品数量 += v
+                            可赠送物品.append(k)
+                    if 可赠送物品数量 < 数量:
+                        msg += f"\n赠送失败：{物品}数量不足，可赠送数量为{可赠送物品数量}"
+                        continue
+                    for k in 可赠送物品:
+                        if 数量 <= 0:
+                            break
+                        if data[k] >= 数量:
+                            data[k] -= 数量
+                            赠送数量 = 数量
+                            数量 = 0
+                        else:
+                            数量 -= data[k]
+                            赠送数量 = data[k]
+                            data[k] = 0
+                        if data[k] <= 0:
+                            del data[k]
+                        at_data = {k: 0}
+                        if at_con:
+                            at_data = at_con.get(类型, {k: 0})
+                        if k not in at_data:
+                            at_data[k] = 0
+                        at_data[k] += 赠送数量
+                        msg += f"\n{k}*{赠送数量}赠送成功！"
+                        db.knapsack.update_one({"_id": user_id}, {"$set": {
+                            类型: data
+                        }}, True)
+                        db.knapsack.update_one({"_id": at_qq}, {"$set": {
+                            类型: at_data
+                        }}, True)
+                else:
+                    if data.get(物品, 0) < 数量:
+                        msg += f"\n赠送失败：{物品}数量不足"
+                        continue
+                    data[物品] -= 数量
+                    if data[物品] <= 0:
+                        del data[物品]
+                    if at_con:
+                        at_data = at_con.get(类型, {物品: 0})
+                    if not at_data.get(物品):
+                        at_data[物品] = 0
+                    at_data[物品] += 数量
+                    db.knapsack.update_one({"_id": user_id}, {"$set": {
+                        类型: data
+                    }}, True)
+                    db.knapsack.update_one({"_id": at_qq}, {"$set": {
+                        类型: at_data
+                    }}, True)
+                    msg += f"\n{物品}*{数量}赠送成功！"
         else:
             if len(物品) == 2:
                 datas = db.equip.find({"持有人": user_id, "标记": 物品})
