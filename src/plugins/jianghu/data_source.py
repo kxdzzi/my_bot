@@ -437,7 +437,7 @@ async def my_gear(user_id, 内容):
     装备data_list = []
     for con in cons:
         是否装备 = user_info.基础属性["装备"].get(con["类型"]) == con['_id']
-        装备data = {"名称": con['_id'], "装备分数": con['装备分数'], "是否装备": 是否装备}
+        装备data = {"名称": con['_id'], "装备分数": con.get('装备分数', 0), "是否装备": 是否装备}
         if con.get('标记'):
             装备data['标记'] = f"[{con.get('标记')}]"
         装备data_list.append(装备data)
