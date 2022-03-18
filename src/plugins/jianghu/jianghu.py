@@ -89,7 +89,7 @@ class PK(Skill):
         if con := db.knapsack.find_one({"_id": 击杀者}):
             材料 = con.get("材料", {})
             图纸 = con.get("图纸", {})
-        if re.match("[赤橙黄绿青蓝紫][金木水火土]", 物品):
+        if re.match("[赤橙黄绿青蓝紫彩][金木水火土]", 物品):
             材料数量 = 材料.get(物品, 0) + 数量
             材料.update({物品: 材料数量})
             msg += f"获得材料：{物品}*{数量}<br>"
@@ -137,7 +137,7 @@ class PK(Skill):
         材料等级 = random.choice("蓝紫")
         材料名称 = 材料等级 + 材料属性
         材料数量 = 材料.get(材料名称, 0)
-        材料数量 += random.randint(1, 3)
+        材料数量 += random.randint(1, 4)
         材料.update({材料名称: 材料数量})
 
         图纸样式 = random.choice(["武器", "外装", "饰品"])

@@ -249,7 +249,7 @@ async def build_equipment(user_id, res):
     """打造装备"""
     if len(res.split()) != 3:
         return "输入错误"
-    材料re = re.compile(" ([赤橙黄绿青蓝紫][金木水火土])")
+    材料re = re.compile(" ([赤橙黄绿青蓝紫彩][金木水火土])")
     材料list = 材料re.findall(res)
     图纸re = re.compile(" ([武器外装饰品]{2}\d+)")
     图纸list = 图纸re.findall(res)
@@ -299,7 +299,7 @@ async def compose(user_id, res):
         return "物品不足"
     if res[0] == "合成材料":
         材料 = con.get("材料", {})
-        材料限制等级 = 材料等级表["紫"]
+        材料限制等级 = 材料等级表["彩"]
         if len(res) == 2 and res[1].strip() in 材料等级表:
             材料限制等级 = 材料等级表[res[1].strip()]
         原始材料集合 = copy.deepcopy(材料)
@@ -749,7 +749,7 @@ async def pk(动作, user_id, at_qq):
 
 
 async def give(user_id, at_qq, 物品):
-    材料re = re.compile(r"([赤橙黄绿青蓝紫][金木水火土])")
+    材料re = re.compile(r"([赤橙黄绿青蓝紫彩][金木水火土])")
     图纸re = re.compile(r"([武器外装饰品]{2}\d+)")
     装备_re = re.compile(r"(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{0,1})")
     if 物品 in shop:
