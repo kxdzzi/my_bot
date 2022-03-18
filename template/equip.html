@@ -26,9 +26,9 @@
         <div>
             {% for i in 装备 %}
                 {% if i.是否装备 %}
-	            <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip" style="color:rgb(26, 84, 122);">{{i.名称}}</span> {{i.价格}}</div>
+	            <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip" style="color:rgb(26, 84, 122);">{{i.名称}}</span> {{i.装备分数}}</div>
                 {% else %}
-		        <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip">{{i.名称}}</span> {{i.价格}}</div>
+		        <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip">{{i.名称}}</span> {{i.装备分数}}</div>
                 {% endif %}
             {% endfor %}
         </div>

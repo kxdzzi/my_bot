@@ -428,21 +428,19 @@ async def my_gear(user_id, 内容):
     页数 = math.ceil(装备数量 / limit)
     if n > 页数:
         return f"你只有{页数}页装备"
-    cons = db.equip.find(filter)
+    skip = limit * (n - 1)
+    sort = list({'装备分数': -1}.items())
+    cons = db.equip.find(filter=filter, sort=sort, limit=limit, skip=skip)
     if not cons:
         return "你没有装备"
-    msg = f"【装备 {n}/{页数}】"
     user_info = UserInfo(user_id)
-    装备列表 = sorted(cons, key=lambda x: 装备价格(x), reverse=True)
     装备data_list = []
-    for con in 装备列表[(n - 1) * 10:n * 10]:
-        价格 = 装备价格(con)
+    for con in cons:
         是否装备 = user_info.基础属性["装备"].get(con["类型"]) == con['_id']
-        装备data = {"名称": con['_id'], "价格": 价格, "是否装备": 是否装备}
+        装备data = {"名称": con['_id'], "装备分数": con['装备分数'], "是否装备": 是否装备}
         if con.get('标记'):
             装备data['标记'] = f"[{con.get('标记')}]"
         装备data_list.append(装备data)
-        msg += f"\n  {是否装备}{con['_id']} {价格}"
     user_info.基础属性['名称']
     data = {"持有人": user_info.基础属性['名称'], "页数": 页数, "当前页": n, "装备": 装备data_list}
     pagename = "equip.html"
