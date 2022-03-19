@@ -251,7 +251,7 @@ async def build_equipment(user_id, res):
         return "输入错误"
     材料re = re.compile(" ([赤橙黄绿青蓝紫彩][金木水火土])")
     材料list = 材料re.findall(res)
-    图纸re = re.compile(" ([武器外装饰品]{2}\d+)")
+    图纸re = re.compile(" ([武器外装饰品]{2}\d*)")
     图纸list = 图纸re.findall(res)
     if not all([材料list, 图纸list]):
         return "输入错误"
@@ -262,6 +262,11 @@ async def build_equipment(user_id, res):
     if con:
         材料 = con.get("材料", {})
         图纸 = con.get("图纸", {})
+        if len(图纸名称) == 2:
+            图纸名称列表 = [i for i in 图纸.keys() if 图纸名称 in i]
+            if not 图纸名称列表:
+                return "图纸数量不足"
+            图纸名称 = sorted(图纸名称列表, key=lambda x: int(x[2:]), reverse=True)[0]
         材料数量 = 材料.get(材料名称, 0)
         图纸数量 = 图纸.get(图纸名称, 0)
     if 材料数量 < 1:
@@ -285,7 +290,7 @@ async def build_equipment(user_id, res):
     装备["持有人"] = user_id
     装备["打造日期"] = datetime.now()
     db.equip.insert_one(装备)
-    msg = f"打造成功！\n装备名称：{装备['_id']}（{装备['装备分数']}）\n基础属性：{装备['基础属性']}\n"
+    msg = f"消耗{图纸名称}、{材料名称}打造成功！\n装备名称：{装备['_id']}（{装备['装备分数']}）\n基础属性：{装备['基础属性']}\n"
     if 装备.get("附加属性"):
         msg += f"附加属性：{装备['附加属性']}\n"
     打造人 = db.jianghu.find_one({'_id': 装备['打造人']})
