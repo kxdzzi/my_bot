@@ -5,6 +5,7 @@ from nonebot.exception import IgnoredException
 from nonebot.matcher import Matcher
 from nonebot.message import run_preprocessor
 from nonebot.permission import SUPERUSER
+from src.utils.db import db
 
 from . import data_source as source
 
@@ -14,7 +15,11 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
     '''插件管理系统，插件开关实现'''
     # 检测插件是否注册
     group_id = event.group_id
+    user_id = event.user_id
     module_name = matcher.plugin_name
+    bot_conf_con = db.bot_conf.find_one({'_id': 1})
+    user_black_list = bot_conf_con.get("user_black_list", [])
+    group_black_list = bot_conf_con.get("group_black_list", [])
     status = await source.get_plugin_status(group_id, module_name)
     if status is None:
         # 跳过未注册的插件
@@ -26,7 +31,9 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
 
     # 检测机器人总开关
     bot_status = await source.get_bot_status(group_id)
-    if not bot_status:
+    if (not bot_status
+            or group_id in group_black_list
+            or user_id in user_black_list):
         raise IgnoredException("机器人未开启")
 
 
@@ -39,11 +46,13 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
 regex = r"^(打开|关闭) [\u4e00-\u9fa5]+$"
 group_status = on_regex(pattern=regex,
                         permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER,
-                        priority=2, block=False)  # 群设置
+                        priority=2,
+                        block=False)  # 群设置
 
 plugin_status = on_regex(pattern=regex,
                          permission=SUPERUSER | GROUP_ADMIN | GROUP_OWNER,
-                         priority=3, block=True)  # 插件设置
+                         priority=3,
+                         block=True)  # 插件设置
 
 
 @group_status.handle()
@@ -54,12 +63,11 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
     config_type = get_msg[-1]
     if config_type not in ["进群通知", "离群通知", "开服推送", "新闻推送"]:
         await group_status.finish()
-    flag = await source.change_group_config(event.group_id, config_type, status)
+    flag = await source.change_group_config(event.group_id, config_type,
+                                            status)
     if flag:
         matcher.stop_propagation()
-        await group_status.finish(
-            f"设置成功！\n[{config_type}]当前已 {status}"
-        )
+        await group_status.finish(f"设置成功！\n[{config_type}]当前已 {status}")
     await group_status.finish()
 
 
@@ -69,7 +77,8 @@ async def _(event: GroupMessageEvent):
     get_msg = event.get_plaintext().split(" ")
     status = get_msg[0]
     plugin_name = get_msg[-1]
-    flag = await source.change_plugin_status(event.group_id, plugin_name, status)
+    flag = await source.change_plugin_status(event.group_id, plugin_name,
+                                             status)
     if flag:
         msg = f"设置成功！\n插件[{plugin_name}]当前已 {status}"
     else:
