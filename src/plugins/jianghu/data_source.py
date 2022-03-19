@@ -460,8 +460,6 @@ async def check_gear(user_id, res):
         datas = db.equip.find({"持有人": user_id, "标记": gear_name})
     else:
         datas = db.equip.find({"_id": gear_name})
-    if not datas:
-        return "查不到此装备"
     ret_data_list = []
     for data in datas:
         打造人_info = UserInfo(data['打造人'])
@@ -473,6 +471,8 @@ async def check_gear(user_id, res):
             data['持有人'] = 持有人_info.基础属性['名称']
         data['打造日期'] = data['打造日期'].strftime("%Y-%m-%d")
         ret_data_list.append(data)
+    if not ret_data_list:
+        return "查不到此装备"
     ret_data = {
         "datas": ret_data_list
     }
