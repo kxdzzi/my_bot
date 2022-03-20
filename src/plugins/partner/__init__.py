@@ -30,7 +30,7 @@ find_partner_do_not_disturb = on_regex(r"^(分配情缘免打扰 (开|关))$",
                                        priority=4,
                                        block=True)
 
-find_partner = on_regex(r"^((找|分配|安排)(情缘|亲友))$",
+find_partner = on_regex(r"^((找|分配|安排)(情缘|亲友|富婆))$",
                         permission=GROUP,
                         priority=5,
                         block=True)
