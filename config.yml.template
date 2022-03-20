@@ -53,8 +53,6 @@ bot_conf:
   access_group_num: 100
   # 机器人管理群(无视机器人加群限制)
   manage_group: []
-  # 休假的机器人(不接受好友请求, 不接收加群请求, 不进入机器人列表)
-  out_of_work_bot: []
 
 # 路径设置
 path:

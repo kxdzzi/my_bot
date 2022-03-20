@@ -62,18 +62,14 @@ async def check_group(group_id: int, bot: Bot):
 
 async def register_bot(bot: Bot):
     bot_id = int(bot.self_id)
-    out_of_work_bot_list = config.bot_conf.get("out_of_work_bot", [])
-    if bot_id in out_of_work_bot_list:
-        for out_of_work_bot in out_of_work_bot_list:
-            db.bot_info.delete_many({"_id": out_of_work_bot})
-    else:
-        ret = await bot.get_stranger_info(user_id=bot_id, no_cache=False)
-        bot_name = ret['nickname']
-        db.bot_info.update_one({"_id": bot_id},
-                               {"$set": {
-                                   "bot_name": bot_name,
-                                   "login_data": datetime.now()
-                               }}, True)
+
+    ret = await bot.get_stranger_info(user_id=bot_id, no_cache=False)
+    bot_name = ret['nickname']
+    db.bot_info.update_one({"_id": bot_id},
+                           {"$set": {
+                                "bot_name": bot_name,
+                                "login_data": datetime.now()
+                           }}, True)
 
 
 async def get_server(group_id: int) -> str:

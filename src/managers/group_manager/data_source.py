@@ -170,7 +170,7 @@ async def check_add_bot_to_group(bot: Bot, group_id: int) -> tuple:
 
     access_group_num = config.bot_conf.get("access_group_num", 50)
     manage_group = config.bot_conf.get("manage_group", [])
-    out_of_work_bot = config.bot_conf.get("out_of_work_bot", [])
+    out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
     bot_id = int(bot.self_id)
     group_list = await bot.get_group_list()
     # 若群id不在管理群列表, 则需要进行加群条件过滤

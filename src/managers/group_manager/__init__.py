@@ -269,7 +269,7 @@ async def _(bot: Bot, msg: Message = Depends(get_didi_msg)):
 @friend_request.handle()
 async def _(bot: Bot, event: FriendRequestEvent):
     """加好友事件"""
-    out_of_work_bot = config.bot_conf.get("out_of_work_bot", [])
+    out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
