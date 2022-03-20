@@ -101,7 +101,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
     user_id = event.user_id
     group_id = event.group_id
     end_str = event.raw_message[-2:]
-    if end_str not in ["情缘", "亲友"]:
+    if end_str not in ["情缘", "亲友", "富婆"]:
         return
     logger.info(f"<y>群{group_id}</y> | <g>{user_id}</g> | 分配{end_str}")
     group_member_list = await bot.get_group_member_list(group_id=group_id)
