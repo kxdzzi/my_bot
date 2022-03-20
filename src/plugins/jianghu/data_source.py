@@ -894,6 +894,25 @@ async def healing(user_id, target_id):
     return "花费一百两银子，疗伤成功！"
 
 
+async def gear_ranking(bot: Bot, user_id):
+    '''神兵排行'''
+    logger.debug(f"神兵排行 | <e>{user_id}</e>")
+    filter = {}
+    sort = list({'装备分数': -1}.items())
+    limit = 10
+    msg = "神兵排行\n"
+
+    result = db.equip.find(filter=filter, sort=sort, limit=limit)
+    for n, i in enumerate(result):
+        user_info = UserInfo(i['持有人'])
+        名称 = user_info.基础属性["名称"]
+        if 名称 == "无名":
+            ret = await bot.get_stranger_info(user_id=i['_id'], no_cache=False)
+            名称 = ret['nickname']
+        msg += f"{n+1} {名称} {i['_id']} {i['装备分数']}\n"
+    return msg
+
+
 async def gold_ranking(bot: Bot, user_id):
     '''银两排行'''
 

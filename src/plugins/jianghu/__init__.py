@@ -25,6 +25,7 @@ give_gold = on_regex(r"^赠送银两 *\[CQ:at,qq=\d+\] *\d+$",
                      priority=5,
                      block=True)
 gold_ranking = on_regex(r"^银两排行$", permission=GROUP, priority=5, block=True)
+gear_ranking = on_regex(r"^神兵排行$", permission=GROUP, priority=5, block=True)
 viwe_shop = on_regex(r"^商店$", permission=GROUP, priority=5, block=True)
 ranking = on_regex(r"^我的背包$", permission=GROUP, priority=5, block=True)
 my_gear = on_regex(r"^我的装备.*$", permission=GROUP, priority=5, block=True)
@@ -247,6 +248,13 @@ async def _(bot: Bot, event: GroupMessageEvent):
     user_id = event.user_id
     msg = await source.gold_ranking(bot, user_id)
     await gold_ranking.finish(msg)
+
+@gear_ranking.handle()
+async def _(bot: Bot, event: GroupMessageEvent):
+    """神兵排行"""
+    user_id = event.user_id
+    msg = await source.gear_ranking(bot, user_id)
+    await gear_ranking.finish(msg)
 
 
 @viwe_shop.handle()
