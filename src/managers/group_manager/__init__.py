@@ -323,7 +323,7 @@ async def _(event: GroupMessageEvent,
 @bot_list.handle()
 async def _(event: GroupMessageEvent):
     '''查看机器人列表'''
-    bot_info_list = db.bot_info.find()
+    bot_info_list = db.bot_info.find({"work_stat": True})
     msg = "  机器人QQ   | 群数量\n"
     for bot_info in bot_info_list:
         bot_id = int(bot_info.get("_id"))
