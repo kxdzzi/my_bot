@@ -894,6 +894,32 @@ async def healing(user_id, target_id):
     return "花费一百两银子，疗伤成功！"
 
 
+async def gad_guys_ranking(bot: Bot, user_id):
+    '''恶人排行'''
+    logger.debug(f"恶人排行 | <e>{user_id}</e>")
+    filter = {'善恶值': {"$ne": None}}
+    sort = list({'善恶值': 1}.items())
+    limit = 10
+    msg = "恶人排行\n"
+
+    result = db.jianghu.find(filter=filter, sort=sort, limit=limit)
+    for n, i in enumerate(result):
+        msg += f"{n+1} {i.get('名称')} {i.get('善恶值', 0)}\n"
+    return msg
+
+
+async def good_guys_ranking(bot: Bot, user_id):
+    '''善人排行'''
+    logger.debug(f"善人排行 | <e>{user_id}</e>")
+    filter = {}
+    sort = list({'善恶值': -1}.items())
+    limit = 10
+    msg = "善人排行\n"
+    result = db.jianghu.find(filter=filter, sort=sort, limit=limit)
+    for n, i in enumerate(result):
+        msg += f"{n+1} {i['名称']} {i['善恶值']}\n"
+    return msg
+
 async def gear_ranking(bot: Bot, user_id):
     '''神兵排行'''
     logger.debug(f"神兵排行 | <e>{user_id}</e>")
