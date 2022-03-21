@@ -134,24 +134,24 @@ class PK(Skill):
             材料 = con.get("材料", {})
             图纸 = con.get("图纸", {})
         材料属性 = random.choice("金木水火土")
-        材料等级 = random.choice("蓝紫")
+        材料等级 = random.choice("蓝紫彩")
         材料名称 = 材料等级 + 材料属性
         材料数量 = 材料.get(材料名称, 0)
         材料数量 += random.randint(1, 4)
         材料.update({材料名称: 材料数量})
 
         图纸样式 = random.choice(["武器", "外装", "饰品"])
-        图纸等级 = random.randint(900, 2500)
+        图纸等级 = random.randint(1000, 3000)
         图纸名称 = 图纸样式 + str(图纸等级)
         图纸数量 = 图纸.get(图纸名称, 0)
-        图纸数量 += 1
+        图纸数量 += 2
         图纸.update({图纸名称: 图纸数量})
 
         db.knapsack.update_one({"_id": 击杀者}, {"$set": {
             "材料": 材料,
             "图纸": 图纸
         }}, True)
-        msg = f"获得材料:{材料名称}*{材料数量}, 获得图纸:{图纸名称}，"
+        msg = f"获得材料:{材料名称}*{材料数量}, 获得图纸:{图纸名称}*2，"
         return msg
 
     async def 世界首领普通掉落(self, 攻击人: int, 首领_id: int):
@@ -159,7 +159,7 @@ class PK(Skill):
         图纸 = {}
         user_info = UserInfo(攻击人)
         普通掉落概率 = random.randint(1, 1000) + user_info.基础属性["善恶值"]
-        if 普通掉落概率 < 900:
+        if 普通掉落概率 < 500:
             return ""
         if con := db.knapsack.find_one({"_id": 攻击人}):
             材料 = con.get("材料", {})
@@ -169,12 +169,12 @@ class PK(Skill):
             材料等级 = random.choice("青蓝")
             材料名称 = 材料等级 + 材料属性
             材料数量 = 材料.get(材料名称, 0)
-            材料数量 += random.randint(1, 2)
+            材料数量 += random.randint(1, 5)
             材料.update({材料名称: 材料数量})
             msg = f"，获得材料:{材料名称}*{材料数量}"
         else:
             图纸样式 = random.choice(["武器", "外装", "饰品"])
-            图纸等级 = random.randint(300, 1400)
+            图纸等级 = random.randint(300, 1500)
             图纸名称 = 图纸样式 + str(图纸等级)
             图纸数量 = 图纸.get(图纸名称, 0)
             图纸数量 += 1
@@ -271,7 +271,7 @@ class PK(Skill):
             if 攻方.本次伤害:
                 data["攻方"]["平"] = True
                 data["守方"]["平"] = True
-                获得银两 = random.randint(1, 攻方.本次伤害 // 5)
+                获得银两 = random.randint(2000, 攻方.本次伤害 // 15 + 2500)
                 await self.抢走银两(攻方_id, 0, 获得银两)
                 if not data.get("结算"):
                     data["结算"] = ""

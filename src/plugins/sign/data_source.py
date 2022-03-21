@@ -73,7 +73,7 @@ async def reset_sign_nums():
     '''重置签到人数与福缘'''
 
     sign_num = db.bot_conf.find_one({'_id': 1}).get("sign_num", 0)
-    prize_pool = sign_num * 10000
+    prize_pool = sign_num * 5000
     db.bot_conf.update_one({"_id": 1},
                            {'$set': {
                                "sign_num": 0,
@@ -87,4 +87,3 @@ async def reset_sign_nums():
                                  "river_lantern": 0,
                                  "dungeon_num": 0,
                              }}, True)
-

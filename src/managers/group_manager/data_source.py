@@ -255,7 +255,7 @@ async def tianjianhongfu(bot: Bot, group_id, user_id, nickname):
         lucky = 0
         if con:
             lucky = con.get("lucky", 0)
-        add_gold = random.randint(1, (lucky + 1) * 10)
+        add_gold = random.randint(1, (lucky + 1) * 30)
         gold = 0
         _con = db.user_info.find_one({'_id': user_id})
         if _con:

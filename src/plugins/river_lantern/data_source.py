@@ -133,12 +133,12 @@ async def get_river_lantern(group_id, user_id) -> Message:
     user_lucky = 1.0
     if user_con:
         user_lucky = user_con.get("user_lucky", 1.0)
-    if user_lucky >= random.uniform(0, 35):
+    if user_lucky >= random.uniform(0, 20):
         db.user_info.update_one({"_id": user_id},
                                 {"$set": {
                                     "user_lucky": user_lucky * 0.6
                                 }}, True)
-        add_gold = random.randint(1, len(con_list))
+        add_gold = random.randint(1, len(con_list) * 5)
         gold = 0
         _con = db.user_info.find_one({'_id': user_id})
         if _con:
