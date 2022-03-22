@@ -281,15 +281,15 @@ async def build_equipment(user_id, res):
     图纸[图纸名称] = 图纸数量
     if 图纸数量 == 0:
         del 图纸[图纸名称]
-    db.knapsack.update_one({"_id": user_id}, {"$set": {
-        "材料": 材料,
-        "图纸": 图纸
-    }}, True)
     装备 = 打造装备(材料名称, 图纸名称)
     装备["打造人"] = user_id
     装备["持有人"] = user_id
     装备["打造日期"] = datetime.now()
     db.equip.insert_one(装备)
+    db.knapsack.update_one({"_id": user_id}, {"$set": {
+        "材料": 材料,
+        "图纸": 图纸
+    }}, True)
     msg = f"消耗{图纸名称}、{材料名称}打造成功！\n装备名称：{装备['_id']}（{装备['装备分数']}）\n基础属性：{装备['基础属性']}\n"
     if 装备.get("附加属性"):
         msg += f"附加属性：{装备['附加属性']}\n"
