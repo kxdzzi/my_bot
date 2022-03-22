@@ -87,7 +87,7 @@ async def sent_river_lantern(
                   f"回复内容：{你的回复}\n\n" \
                   f"原内容：{回复内容}\n\n" \
                   f"如果想要回复这个河灯可以在任意群发送“回复河灯 {编号} 你的内容”"
-        await mail_client.send_mail(f"{回复user_id}@qq.com", "河灯回复通知", 邮件内容)
+        await mail_client.send_mail([回复user_id], "河灯回复通知", 邮件内容)
 
     # 恢复善恶
     if river_lantern <= 5:

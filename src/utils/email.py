@@ -42,17 +42,25 @@ class MailClient(object):
         self._sender = config.mail['sender']
         self._receiver = config.mail['receiver']
 
-    async def send_mail(self, receiver: str, mail_title: str,
+    async def send_mail(self, receivers: list, mail_title: str,
                         mail_content: str) -> None:
         n = random.randint(1, 15)
         self._mail = f"{self._user}{n}@{self._domain}"
         text = mail_content
         message = MIMEText(text)
+        receiver_list = []
+        for receiver in receivers:
+            if isinstance(receiver, int):
+                cui_receiver = db.jianghu.find_one({"_id": receiver}).get("email")
+                if cui_receiver:
+                    receiver = cui_receiver
+                else:
+                    receiver = f"{receiver}@qq.com"
+            receiver_list.append(receiver)
         message['From'] = Header(f'{self._sender}<{self._mail}>', 'utf-8')
-
-        message['To'] = receiver
+        message['To'] = Header(";".join([f"<{i}>" for i in receiver_list]), 'utf-8')
         message["Subject"] = mail_title
-        msg = f"{self._sender}[{self._mail}] -> {receiver}: {text}"
+        msg = f"{self._sender}[{self._mail}] -> {receiver_list}: {text}"
         logger.info(msg)
 
         try:

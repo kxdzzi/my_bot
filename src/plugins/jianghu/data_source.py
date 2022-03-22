@@ -63,6 +63,18 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
     return MessageSegment.image(img)
 
 
+async def bind_email(user_id, res):
+    if not res:
+        return "输入错误"
+    my_email = res[0]
+    email_pattern = re.compile(r"^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$")
+    match = email_pattern.search(my_email)
+    if not match:
+        return "邮箱格式错误"
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"email": my_email}}, True)
+    return "邮箱绑定成功"
+
+
 async def set_name(user_id, res):
     if not res:
         return "输入错误"

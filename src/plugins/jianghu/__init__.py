@@ -122,6 +122,8 @@ dungeon_progress = on_regex(r"^秘境进度$",
                             priority=5,
                             block=True)
 
+bind_email = on_regex(r"^绑定邮箱 .+$", permission=GROUP, priority=5, block=True)
+
 
 def get_content(event: GroupMessageEvent) -> str:
     '''从前置这些可前可后的消息中获取name'''
@@ -129,6 +131,12 @@ def get_content(event: GroupMessageEvent) -> str:
     text_list = text.split()
     return text_list[1:]
 
+
+@bind_email.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    user_id = event.user_id
+    msg = await source.bind_email(user_id, res)
+    await bind_email.finish(msg)
 
 @my_info.handle()
 async def _(event: GroupMessageEvent):

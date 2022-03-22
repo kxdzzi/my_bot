@@ -165,7 +165,7 @@ async def 购买商品(购买人id, 商品id):
     当前时间 = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     购买人 = UserInfo(购买人id)
     await mail_client.send_mail(
-        f"{寄售人}@qq.com", f"{商品名称}售卖成功通知",
+        [寄售人], f"{商品名称}售卖成功通知",
         f"您寄售的[{商品名称}]于{当前时间}，被【{购买人.基础属性['名称']}】以{商品价格}两银子买走。扣除手续费{手续费}，共获得{获得银两}")
     return f"购买成功！花费{商品价格}两银子，获得[{商品名称}]"
 

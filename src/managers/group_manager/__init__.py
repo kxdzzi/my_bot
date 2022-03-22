@@ -438,23 +438,3 @@ async def _(bot: Bot,
         f"<y>bot({bot_id})</y> | <r>指令退群({group_id})</r> | <g>管理员({event.user_id})</g>"
     )
     await exit_group.finish(ret_msg)
-
-
-@scheduler.scheduled_job("cron", minute="*/30")
-async def _():
-    '''汇报机器人状态'''
-    all_bot = get_bots()
-    for _, bot in all_bot.items():
-        bot_id = bot.self_id
-        now_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        msg = f"{now_time} 正常"
-        async for group_id in GroupList_Async(manage_group):
-            try:
-                logger.info(
-                    f"<y>bot({bot_id})</y> | <r>汇报状态({group_id})</r> | <g>正常</g>"
-                )
-                await bot.send_group_msg(group_id=group_id, message=msg)
-                await asyncio.sleep(random.uniform(0.3, 0.5))
-            except Exception:
-                log = f'群({group_id}) | 发送失败'
-                logger.warning(log)
