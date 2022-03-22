@@ -7,6 +7,8 @@ from src.utils.config import config
 from src.utils.log import logger
 from src.utils.db import db
 
+import random
+
 
 class MailClient(object):
     '''发送邮件class'''
@@ -34,28 +36,28 @@ class MailClient(object):
         '''初始化'''
         self._host = config.mail['host']
         self._pord = config.mail['pord']
+        self._domain = config.mail['domain']
         self._user = config.mail['user']
         self._pass = config.mail['pass']
         self._sender = config.mail['sender']
         self._receiver = config.mail['receiver']
 
     async def send_mail(self, receiver: str, mail_title: str, mail_content: str) -> None:
-        '''
-        :说明
-            发送邮件给配置内用户
-        :参数
-            * robot_id：机器人QQ
-        '''
+        n = random.randint(1, 15)
+        self._mail = f"{self._user}{n}@{self._domain}"
         text = mail_content
         message = MIMEText(text)
-        message['From'] = Header(f'"{self._sender}"<{self._user}>', 'utf-8')
+        message['From'] = Header(f'{self._sender}<{self._mail}>', 'utf-8')
 
         message['To'] = receiver
         message["Subject"] = mail_title
+        msg = f"{self._sender}[{self._mail}] -> {receiver}: {text}"
+        logger.info(msg)
+
         try:
             async with SMTP(hostname=self._host, port=self._pord,
                             use_tls=True) as smtp:
-                await smtp.login(self._user, self._pass)
+                await smtp.login(self._mail, self._pass)
                 await smtp.send_message(message)
         except SMTPException as e:
             log = f"发送邮件失败，原因：{str(e)}"
