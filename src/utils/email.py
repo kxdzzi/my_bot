@@ -42,7 +42,8 @@ class MailClient(object):
         self._sender = config.mail['sender']
         self._receiver = config.mail['receiver']
 
-    async def send_mail(self, receiver: str, mail_title: str, mail_content: str) -> None:
+    async def send_mail(self, receiver: str, mail_title: str,
+                        mail_content: str) -> None:
         n = random.randint(1, 15)
         self._mail = f"{self._user}{n}@{self._domain}"
         text = mail_content
@@ -66,6 +67,10 @@ class MailClient(object):
             logger.error(f"<r>发送邮件失败，可能是你的配置有问题：{str(e)}</r>")
 
     async def bot_offline(self, robot_id: int):
+        db.bot_info.update_one({"_id": robot_id},
+                               {"$set": {
+                                   "online_status": False
+                               }}, True)
         bot_name = db.bot_info.find_one({"_id": robot_id})["bot_name"]
         mail_title = f"机器人[{bot_name}]({robot_id})掉线"
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

@@ -168,10 +168,10 @@ async def handle_data_notice(group_id: int, notice_type: Literal["离群通知",
 async def check_add_bot_to_group(bot: Bot, group_id: int) -> tuple:
     '''检查加群条件'''
 
-    access_group_num = config.bot_conf.get("access_group_num", 50)
     manage_group = config.bot_conf.get("manage_group", [])
     out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
     bot_id = int(bot.self_id)
+    access_group_num = db.bot_info.find_one({'_id': bot_id}).get("access_group_num", 50)
     group_list = await bot.get_group_list()
     # 若群id不在管理群列表, 则需要进行加群条件过滤
     if group_id not in manage_group:

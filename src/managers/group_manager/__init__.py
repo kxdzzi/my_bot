@@ -324,13 +324,12 @@ async def _(event: GroupMessageEvent,
 async def _(event: GroupMessageEvent):
     '''查看机器人列表'''
     bot_info_list = db.bot_info.find({"work_stat": True})
-    msg = "  机器人QQ   | 群数量\n"
+    msg = "  机器人QQ   | 群数量"
     for bot_info in bot_info_list:
         bot_id = int(bot_info.get("_id"))
+        access_group_num = db.bot_info.find_one({'_id': bot_id}).get("access_group_num", 50)
         bot_group_list = db.group_conf.find({"bot_id": bot_id})
-        msg += f"{bot_id: 11d} | {len(list(bot_group_list))}\n"
-    access_group_num = config.bot_conf.get("access_group_num", 50)
-    msg += f"当前加群上限为：{access_group_num}"
+        msg += f"\n{bot_id: 11d} | {len(list(bot_group_list))}/{access_group_num}"
     await bot_list.finish(msg)
 
 

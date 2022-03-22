@@ -65,11 +65,13 @@ async def register_bot(bot: Bot):
 
     ret = await bot.get_stranger_info(user_id=bot_id, no_cache=False)
     bot_name = ret['nickname']
-    db.bot_info.update_one({"_id": bot_id},
-                           {"$set": {
-                                "bot_name": bot_name,
-                                "login_data": datetime.now()
-                           }}, True)
+    db.bot_info.update_one({"_id": bot_id}, {
+        "$set": {
+            "online_status": True,
+            "bot_name": bot_name,
+            "login_data": datetime.now()
+        }
+    }, True)
 
 
 async def get_server(group_id: int) -> str:
