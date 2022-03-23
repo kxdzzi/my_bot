@@ -8,6 +8,7 @@ from src.plugins.jianghu.shop import shop
 from src.plugins.jianghu.auction_house import 上架商品, 下架商品, 查找商品, 购买商品, 我的商品
 from src.utils.log import logger
 from src.utils.scheduler import scheduler
+from src.utils.config import config
 
 from . import data_source as source
 
@@ -584,6 +585,7 @@ async def _(event: GroupMessageEvent):
 @scheduler.scheduled_job("cron", hour="10,15,20,23", minute=0)
 async def _():
     '''10,15,20刷新世界boss'''
-    logger.info("正在复活世界首领")
-    await source.resurrection_world_boss()
-    logger.info("世界首领已复活")
+    if config.node_info.get("node") == "main":
+        logger.info("正在复活世界首领")
+        await source.resurrection_world_boss()
+        logger.info("世界首领已复活")

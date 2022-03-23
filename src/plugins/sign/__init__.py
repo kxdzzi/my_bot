@@ -3,6 +3,7 @@ from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.adapters.onebot.v11.permission import GROUP
 from src.utils.log import logger
 from src.utils.scheduler import scheduler
+from src.utils.config import config
 
 from . import data_source as source
 
@@ -32,6 +33,7 @@ async def _(event: GroupMessageEvent):
 @scheduler.scheduled_job("cron", hour=8, minute=0)
 async def _():
     '''每天零点重置签到人数'''
-    logger.info("正在重置签到人数")
-    await source.reset_sign_nums()
-    logger.info("签到人数已重置")
+    if config.node_info.get("node") == "main":
+        logger.info("正在重置签到人数")
+        await source.reset_sign_nums()
+        logger.info("签到人数已重置")

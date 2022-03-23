@@ -1,5 +1,9 @@
 # 项目配置文件
 
+node_info:
+  node: main
+  domin: 127.0.0.1
+
 # 数据站设置
 jx3api:
   # ws链接地址
@@ -49,8 +53,6 @@ default:
   logger_debug: true
 
 bot_conf:
-  # 最大加群数量
-  access_group_num: 100
   # 机器人管理群(无视机器人加群限制)
   manage_group: []
 
