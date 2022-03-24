@@ -1,8 +1,7 @@
 from src.utils.config import config
 from pymongo import MongoClient
 
-mg_ip = config.mongodb.get("mongdb_ip")
-mg_port = config.mongodb.get("mongodb_port")
+mg_list = config.mongodb.get("mongdb_list")
 mg_usr = config.mongodb.get("mongodb_username")
 mg_pwd = config.mongodb.get("mongodb_password")
 
@@ -20,7 +19,7 @@ class DB():
         """
         创建mongodb客户端
         """
-        self.client = MongoClient(f'mongodb://{mg_ip}:{mg_port}/',
+        self.client = MongoClient(f'mongodb://{",".join(mg_list)}/',
                                   username=mg_usr,
                                   password=mg_pwd)
         self.db = self.client[db_name]
