@@ -14,11 +14,13 @@ async def world_boss(user_id, 世界首领名称):
                 msg += f"\n【{首领['名称']}】({首领['当前气血']})"
             return msg
         return "没有存活的世界首领"
-    n_cd_time = 20
+    n_cd_time = 60
     app_name = "世界首领"
     flag, cd_time = await search_record(user_id, app_name, n_cd_time)
     if not flag:
-        msg = f"{cd_time} 后才可以继续进攻"
+        msg = ''
+        if cd_time < 5:
+            msg = f"{cd_time} 后才可以继续进攻"
         return msg
     await search_once(user_id, app_name)
     战斗 = PK()
