@@ -23,14 +23,14 @@ async def world_boss(user_id, 世界首领名称):
             update={"$inc": {"world_boss_num": 1}},
             upsert=True
         ).get("world_boss_num", 0)
-    剩余次数 = 4 - world_boss_num
+    剩余次数 = 5 - world_boss_num
     if 剩余次数 < -1:
         return
     if 剩余次数 <= 0:
         return MessageSegment.at(user_id) + "进攻次数用尽，发送“领取首领奖励”可以领取奖励"
     flag, cd_time = await search_record(user_id, app_name, n_cd_time)
     if not flag:
-        msg = MessageSegment.at(user_id) + f"{cd_time}后才可以继续进攻，还可以进攻当前首领{剩余次数}次"
+        msg = MessageSegment.at(user_id) + f"{cd_time}后才可以继续进攻，还可以进攻当前首领{剩余次数-1}次"
         return msg
     await search_once(user_id, app_name)
     战斗 = PK()
