@@ -164,8 +164,8 @@ class Skill():
         self.战斗记录(
             f"<strong>{攻方.名称}</strong> {技能名称}[{伤害类型[:2]}](-<span class='text-danger'>{伤害}</span>) > <strong>{守方.名称}</strong>({守方.当前气血}/{守方.当前状态['气血上限']})"
         )
-        重伤状态 = 守方.当前气血 <= 0
-        return 重伤状态, 伤害
+        # 重伤状态 = 守方.当前气血 <= 0
+        return 守方.重伤状态, 伤害
 
     def 三清剑法(self, 自己: UserInfo, 目标: UserInfo):
         """对目标攻击多次, 伤害逐渐提高"""

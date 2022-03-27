@@ -13,6 +13,7 @@
             src:url('font/youai.ttf');
         }
         div{
+            font-size: 12px;
             font-family: youai;
         }
         .user_qlogo{/*父元素div*/
@@ -22,13 +23,16 @@
         position: absolute;/*絶対定位*/
         top: 3px;
         left: 10px;
-        font-size: 40px;
+        font-size: 23px;
         -webkit-text-stroke: 1px rgb(255, 255, 255);
-
+        }
+        p {
+            margin-bottom: 0
         }
         .progress {
             border-style:solid;
             border-width:1px;
+            height: 8px;
             border-color: rgb(175, 159, 140);
         }
         .progress-bar.hp {
@@ -47,12 +51,12 @@
 </head>
 
 <body>
-    <div id="main" style="text-align:center;width: 500px;padding: 10px;background-image: url('img/bg.png');">
-        <div class="row align-items-center" style="margin:10px;">
+    <div id="main" style="text-align:center;width: 350px;padding: 10px;background-image: url('img/bg.png');">
+        <div class="row align-items-center" style="margin:3px;">
             <div class="col-4 text-center">
                 <p>{{攻方.名称}}</p>
                 <div class="user_qlogo">
-                    <img src="http://q1.qlogo.cn/g?b=qq&nk={{ 攻方.id }}&s=160" class="img-thumbnail" style="border-radius:1.25rem">
+                    <img src="http://q1.qlogo.cn/g?b=qq&nk={{ 攻方.id }}&s=100" class="img-thumbnail" style="border-radius:1rem">
                     {% if not 攻方.平 %}
                         {% if 攻方.胜负 %}
                         <p style="color: rgb(122, 24, 11)">胜</p>
@@ -62,27 +66,27 @@
                     {% endif %}
                 </div>
                 <div class="progress text-center">
-                    <div class="progress-bar hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.气血百分比 }};"></div>
-                    <div class="progress-bar wane-hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.减血百分比 }};"></div>
+                    <div class="progress-bar hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.气血百分比 }}%;"></div>
+                    <div class="progress-bar wane-hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.减血百分比 }}%;"></div>
                 </div>
                 <p class="status">{{ 攻方.当前气血 }} / {{ 攻方.气血上限 }}</p>
                 <div class="progress text-center">
-                    <div class="progress-bar mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.内力百分比 }};"></div>
-                    <div class="progress-bar wane-mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.减内百分比 }};"></div>
+                    <div class="progress-bar mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.内力百分比 }}%;"></div>
+                    <div class="progress-bar wane-mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 攻方.减内百分比 }}%;"></div>
                 </div>
                 <p class="status">{{ 攻方.当前内力 }} / {{ 攻方.内力上限 }}</p>
             </div>
             <div class="col-4 text-center">
-                <img src="./img/攻击.svg" height="60" width="60">
+                <img src="./img/攻击.svg" height="30" width="30">
                 <p>战斗记录 {{战斗编号}}</p>
             </div>
             <div class="col-4 text-center">
                 <p>{{守方.名称}}</p>
                 <div class="user_qlogo">
                     {% if 守方.类型=="首领" %}
-                    <img src="./img/首领头像/{{ 守方.名称 }}.png" class="img-thumbnail" style="border-radius:1.25rem">
+                    <img src="./img/首领头像/{{ 守方.名称 }}.png" class="img-thumbnail" style="border-radius:1rem">
                     {% else %}
-                    <img src="http://q1.qlogo.cn/g?b=qq&nk={{ 守方.id }}&s=160" class="img-thumbnail" style="border-radius:1.25rem">
+                    <img src="http://q1.qlogo.cn/g?b=qq&nk={{ 守方.id }}&s=100" class="img-thumbnail" style="border-radius:1rem">
                     {% endif %}
                     {% if not 守方.平 %}
                         {% if 守方.胜负 %}
@@ -93,13 +97,13 @@
                     {% endif %}
                 </div>
                 <div class="progress">
-                    <div class="progress-bar hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.气血百分比 }};"></div>
-                    <div class="progress-bar wane-hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.减血百分比 }};"></div>
+                    <div class="progress-bar hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.气血百分比 }}%;"></div>
+                    <div class="progress-bar wane-hp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.减血百分比 }}%;"></div>
                 </div>
                 <p class="status">{{ 守方.当前气血 }} / {{ 守方.气血上限 }}</p>
                 <div class="progress text-center">
-                    <div class="progress-bar mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.内力百分比 }};"></div>
-                    <div class="progress-bar wane-mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.减内百分比 }};"></div>
+                    <div class="progress-bar mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.内力百分比 }}%;"></div>
+                    <div class="progress-bar wane-mp" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0" style="width: {{ 守方.减内百分比 }}%;"></div>
                 </div>
                 <p class="status">{{ 守方.当前内力 }} / {{ 守方.内力上限 }}</p>
             </div>

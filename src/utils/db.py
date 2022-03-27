@@ -52,6 +52,8 @@ class DB():
         self.npc = self.db.npc
         # 交易行
         self.auction_house = self.db.auction_house
+        # 奖池
+        self.prize_pool = self.db.prize_pool
 
     def __enter__(self):
         return self

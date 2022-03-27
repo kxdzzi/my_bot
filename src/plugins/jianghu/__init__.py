@@ -82,7 +82,8 @@ sell_equipment = on_regex(r"^出售装备 .+?$",
                           priority=5,
                           block=True)
 
-world_boss = on_regex(r"^世界首领", permission=GROUP, priority=5, block=True)
+world_boss = on_regex(r"^世界首领 .{2}$", permission=GROUP, priority=5, block=True)
+claim_rewards = on_regex(r"^领取首领奖励$", permission=GROUP, priority=5, block=True)
 
 healing = on_regex(r"^疗伤$", permission=GROUP, priority=5, block=True)
 
@@ -467,6 +468,14 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     user_id = event.user_id
     msg = await source.pk_world_boss(user_id, res)
     await world_boss.finish(msg)
+
+
+@claim_rewards.handle()
+async def _(event: GroupMessageEvent):
+    """领取首领奖励"""
+    user_id = event.user_id
+    msg = await source.claim_rewards(user_id)
+    await claim_rewards.finish(msg)
 
 
 @start_dungeon.handle()

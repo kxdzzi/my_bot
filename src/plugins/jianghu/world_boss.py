@@ -14,13 +14,21 @@ async def world_boss(user_id, 世界首领名称):
                 msg += f"\n【{首领['名称']}】({首领['当前气血']})"
             return msg
         return "没有存活的世界首领"
-    n_cd_time = 60
+    n_cd_time = 10
     app_name = "世界首领"
+    world_boss_num = db.user_info.find_one_and_update(
+            filter={"_id": user_id},
+            update={"$inc": {"world_boss_num": 1}},
+            upsert=True
+        ).get("world_boss_num", 0)
+    剩余次数 = 5 - world_boss_num
+    if 剩余次数 < -2:
+        return
+    if 剩余次数 <= 0:
+        return "进攻次数用尽"
     flag, cd_time = await search_record(user_id, app_name, n_cd_time)
     if not flag:
-        msg = ''
-        if cd_time < 5:
-            msg = f"{cd_time} 后才可以继续进攻"
+        msg = f"{cd_time} 后才可以继续进攻，还可以进攻当前首领{剩余次数}次"
         return msg
     await search_once(user_id, app_name)
     战斗 = PK()

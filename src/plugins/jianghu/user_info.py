@@ -32,7 +32,7 @@ def init_user_info(user_id):
     return init_data
 
 
-dungeon_boss = os.path.realpath(__file__+"/../jianghu_data/dungeon_boss.yml")
+dungeon_boss = os.path.realpath(__file__ + "/../jianghu_data/dungeon_boss.yml")
 
 
 class UserInfo():
@@ -59,9 +59,12 @@ class UserInfo():
                 self.装备列表.append(装备)
         self.本次伤害 = 0
         self.本次治疗 = 0
+        self.气血变化量 = 0
+        self.内力变化量 = 0
         self.名称 = self.基础属性["名称"]
         self.当前气血 = self.基础属性["当前气血"]
         self.当前内力 = self.基础属性["当前内力"]
+        self.重伤状态 = self.基础属性["重伤状态"]
         self.初始状态 = {}
         self.当前状态 = {}
         self.动态状态 = {}
@@ -128,10 +131,16 @@ class UserInfo():
             self.当前状态[k] = self.初始状态[k] + self.动态状态[k]
         if self.当前气血 > self.当前状态["气血上限"]:
             self.当前气血 = self.当前状态["气血上限"]
-            db.jianghu.update_one({"_id": self.user_id}, {"$set": {"当前气血": self.当前气血}}, True)
+            db.jianghu.update_one({"_id": self.user_id},
+                                  {"$set": {
+                                      "当前气血": self.当前气血
+                                  }}, True)
         if self.当前内力 > self.当前状态["内力上限"]:
             self.当前内力 = self.当前状态["内力上限"]
-            db.jianghu.update_one({"_id": self.user_id}, {"$set": {"当前内力": self.当前内力}}, True)
+            db.jianghu.update_one({"_id": self.user_id},
+                                  {"$set": {
+                                      "当前内力": self.当前内力
+                                  }}, True)
 
     def 普通攻击(self):
         身法 = self.基础属性["身法"]
@@ -151,24 +160,66 @@ class UserInfo():
                 self.基础属性[k] += v
         self.计算当前状态()
 
-    def 气血变化(self, 气血变化量):
+    def 最终结算(self):
+        """
+        # 是否重伤, 是否本场战斗重伤, 剩余血量
+        """
+        self.本场战斗重伤 = False
         if self.基础属性.get("类型") in ("首领", ):
-            db.npc.update_one({"_id": self.user_id}, {"$inc": {"当前气血": 气血变化量}}, True)
-            self.当前气血 = db.npc.find_one({"_id": self.user_id})["当前气血"]
-        elif self.基础属性.get("类型") == "秘境首领":
-            self.当前气血 += 气血变化量
+            db_con = db.npc
         else:
-            db.jianghu.update_one({"_id": self.user_id}, {"$inc": {"当前气血": 气血变化量}}, True)
-            self.当前气血 = db.jianghu.find_one({"_id": self.user_id})["当前气血"]
+            db_con = db.jianghu
+
+        if self.基础属性.get("类型") == "秘境首领":
+            user_info = self.基础属性
+        else:
+            user_info = db_con.find_one({"_id": self.user_id})
+
+        if user_info["重伤状态"]:
+            self.重伤状态 = True
+            return
+
+        self.当前气血 = user_info["当前气血"] + self.气血变化量
+        self.当前内力 = user_info["当前内力"] + self.内力变化量
+
+        if self.当前气血 <= 0:
+            self.当前气血 = 0
+            self.重伤状态 = True
+            self.本场战斗重伤 = True
+        if self.当前内力 < 0:
+            self.当前内力 = 0
+
+        if self.基础属性.get("类型") != "秘境首领":
+            db_con.update_one(
+                {"_id": self.user_id},
+                {"$set": {
+                    "当前气血": self.当前气血,
+                    "当前内力": self.当前内力,
+                    "重伤状态": self.重伤状态
+                }}, True)
+
+    def 气血变化(self, 气血变化量):
+        self.气血变化量 += 气血变化量
+        self.当前气血 += 气血变化量
+        if self.当前气血 <= 0:
+            self.重伤状态 = True
+        # if self.基础属性.get("类型") in ("首领", ):
+        #     db.npc.update_one({"_id": self.user_id}, {"$inc": {"当前气血": 气血变化量}}, True)
+        #     self.当前气血 = db.npc.find_one({"_id": self.user_id})["当前气血"]
+        # elif self.基础属性.get("类型") == "秘境首领":
+        #     self.当前气血 += 气血变化量
+        # else:
+        #     db.jianghu.update_one({"_id": self.user_id}, {"$inc": {"当前气血": 气血变化量}}, True)
+        #     self.当前气血 = db.jianghu.find_one({"_id": self.user_id})["当前气血"]
 
     def 内力变化(self, 内力变化量):
-        if self.基础属性.get("类型") in ("首领", ):
-            db.npc.update_one({"_id": self.user_id}, {"$inc": {"当前内力": 内力变化量}}, True)
-            self.当前内力 = db.npc.find_one({"_id": self.user_id})["当前内力"]
-        elif self.基础属性.get("类型") == "秘境首领":
-            self.当前内力 += 内力变化量
-        else:
-            db.jianghu.update_one({"_id": self.user_id}, {"$inc": {"当前内力": 内力变化量}}, True)
-            self.当前内力 = db.jianghu.find_one({"_id": self.user_id})["当前内力"]
-
-
+        self.内力变化量 += 内力变化量
+        self.当前内力 += 内力变化量
+        # if self.基础属性.get("类型") in ("首领", ):
+        #     db.npc.update_one({"_id": self.user_id}, {"$inc": {"当前内力": 内力变化量}}, True)
+        #     self.当前内力 = db.npc.find_one({"_id": self.user_id})["当前内力"]
+        # elif self.基础属性.get("类型") == "秘境首领":
+        #     self.当前内力 += 内力变化量
+        # else:
+        #     db.jianghu.update_one({"_id": self.user_id}, {"$inc": {"当前内力": 内力变化量}}, True)
+        #     self.当前内力 = db.jianghu.find_one({"_id": self.user_id})["当前内力"]

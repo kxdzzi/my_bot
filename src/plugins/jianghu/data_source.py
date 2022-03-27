@@ -528,11 +528,27 @@ async def pk_world_boss(user_id, res):
     if res:
         世界首领名称 = res[0]
     data = await world_boss(user_id, 世界首领名称)
+    if not data:
+        return
     if isinstance(data, str):
         return data
     pagename = "pk.html"
     img = await browser.template_to_image(pagename=pagename, **data)
     return MessageSegment.image(img)
+
+
+async def claim_rewards(user_id):
+    """领取首领奖励"""
+    user = db.user_info.find_one_and_update({"_id": user_id}, {"$set": {"contribution": 0}})
+    contribution = 0
+    if user:
+        contribution = int(user.get("contribution", 0))
+    if not contribution:
+        return "你没有贡献值"
+    获得银两 = contribution
+    db.user_info.find_one_and_update({"_id": user_id}, {"$inc": {"gold": 获得银两}})
+    return f"消耗{contribution}贡献值, 获得银两{获得银两}"
+
 
 
 async def start_dungeon(user_id, res):
