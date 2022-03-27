@@ -1,5 +1,5 @@
 import re
-import datetime
+from datetime import datetime
 import math
 
 from src.utils.db import db
@@ -42,6 +42,11 @@ async def 上架商品(寄售人id, 商品名称, 价格, 备注=""):
         con = db.equip.find_one({"_id": 商品名称})
         if not con or 寄售人id != con.get("持有人", 0):
             return "你没有这件装备"
+        交易时间 = con.get("交易时间")
+        if 交易时间:
+            交易保护时间 = 1800 - (datetime.now() - 交易时间).seconds
+            if 交易保护时间 > 0:
+                return f"{商品名称}正在交易保护期间，无法售卖。剩余时间：{交易保护时间}秒"
         装备 = db.jianghu.find_one({"_id": 寄售人id})["装备"]
         if 商品名称 == 装备[con["类型"]]:
             return "该装备正在使用，无法上架"
@@ -55,7 +60,7 @@ async def 上架商品(寄售人id, 商品名称, 价格, 备注=""):
         "价格": int(价格),
         "名称": 商品名称,
         "寄售人": 寄售人id,
-        "日期": datetime.datetime.now(),
+        "日期": datetime.now(),
         "关注": 0,
         "备注": 备注
     }
@@ -154,7 +159,7 @@ async def 购买商品(购买人id, 商品id):
         con[商品类型][商品名称] += 1
         db.knapsack.update_one({"_id": 购买人id}, {"$set": con}, True)
     elif 商品类型 in ("武器", "外装", "饰品"):
-        db.equip.update_one({"_id": 商品名称}, {"$set": {"持有人": 购买人id}}, True)
+        db.equip.update_one({"_id": 商品名称}, {"$set": {"持有人": 购买人id, "交易时间": datetime.now()}}, True)
     # 交易行删除商品
     db.auction_house.delete_one({"_id": 商品id})
     # 寄售人获得 银两 使用qq邮箱接收信息
@@ -162,7 +167,7 @@ async def 购买商品(购买人id, 商品id):
     获得银两 = 商品价格 - 手续费
     db.user_info.update_one({"_id": 购买人id}, {"$inc": {"gold": -商品价格}})
     db.user_info.update_one({"_id": 寄售人}, {"$inc": {"gold": 获得银两}})
-    当前时间 = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    当前时间 = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     购买人 = UserInfo(购买人id)
     await mail_client.send_mail(
         [寄售人], f"{商品名称}售卖成功通知",

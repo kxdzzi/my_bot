@@ -530,7 +530,7 @@ async def pk_world_boss(user_id, res):
     data = await world_boss(user_id, 世界首领名称)
     if not data:
         return
-    if isinstance(data, str):
+    if isinstance(data, Message) or isinstance(data, str):
         return data
     pagename = "pk.html"
     img = await browser.template_to_image(pagename=pagename, **data)
@@ -892,12 +892,18 @@ async def give(user_id, at_qq, 物品列表):
                 if data["持有人"] != user_id:
                     msg += f"\n{data['_id']}赠送失败：你没有这件装备或是该装备正在售卖。"
                     continue
+                交易时间 = data.get("交易时间")
+                if 交易时间:
+                    交易保护时间 = 1800 - (datetime.now() - 交易时间).seconds
+                    if 交易保护时间 > 0:
+                        msg += f"\n{data['_id']}正在交易保护期间，无法赠送。剩余时间：{交易保护时间}秒"
+                        continue
                 装备 = db.jianghu.find_one({"_id": user_id})["装备"]
                 if data['_id'] == 装备[data["类型"]]:
                     msg += f"\n赠送失败：{data['_id']}正在使用，无法赠送"
                     continue
                 msg += f"\n{data['_id']}赠送成功！"
-                db.equip.update_one({"_id": data["_id"]}, {"$set": {"持有人": at_qq}}, True)
+                db.equip.update_one({"_id": data["_id"]}, {"$set": {"持有人": at_qq, "交易时间": datetime.now()}}, True)
     return msg
 
 

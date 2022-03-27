@@ -17,7 +17,7 @@ async def search_record(search_id: int, app_name: str, cd_time: int):
     if left_cd >= 3600:
         time_fmt = "%H:%M:%S"
     elif left_cd >= 60:
-        time_fmt = "%M:%S"
+        time_fmt = "%M分%S秒"
     else:
         time_fmt = "%S秒"
     return False, time.strftime(time_fmt, time.gmtime(left_cd))

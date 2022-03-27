@@ -3,7 +3,7 @@ from src.plugins.jianghu.user_info import UserInfo
 from src.plugins.jianghu.skill import Skill
 from src.utils.db import db
 import re
-
+from src.utils.log import logger
 
 class PK(Skill):
 
@@ -295,8 +295,10 @@ class PK(Skill):
                 elif data["守方"]["气血百分比"] <= 0 < data["守方"]["气血百分比"]+data["守方"]["减血百分比"]:
                     db.user_info.update_one({"_id": 攻方.user_id}, {"$mul": {"contribution": 1.2}}, True)
                     data["结算"] += f"<br>首领气被击败！当前贡献值提高 20%！"
-                当前贡献 = db.user_info.find_one({"_id": 攻方.user_id})["contribution"]
-                data["结算"] += f"<br>当前贡献：{int(当前贡献)}"
+                user = db.user_info.find_one({"_id": 攻方.user_id})
+                攻击次数 = user['world_boss_num']
+                data["结算"] += f"<br>当前贡献：{int(user['contribution'])}<br>剩余攻击次数: {5-攻击次数}"
+                logger.info(f"<y>{攻方.名称}</y> | <g>世界首领</g> | 伤害：{攻方.本次伤害} | 首领气血：{守方.当前气血}/{守方.当前状态['气血上限']} | 攻击次数：{攻击次数}")
 
         if action == "秘境首领":
             data["守方"]["类型"] = "首领"
