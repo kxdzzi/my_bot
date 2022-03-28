@@ -86,4 +86,5 @@ async def reset_sign_nums():
                                  "is_sign": False,
                                  "river_lantern": 0,
                                  "dungeon_num": 0,
+                                 "contribution": 0,
                              }}, True)
