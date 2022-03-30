@@ -594,7 +594,7 @@ async def _(event: GroupMessageEvent):
 @scheduler.scheduled_job("cron", hour="10,15,20,23", minute=0)
 async def _():
     '''10,15,20刷新世界boss'''
-    if config.node_info.get("node") == "main":
+    if config.node_info.get("node") == config.node_info.get("main"):
         logger.info("正在复活世界首领")
         await source.resurrection_world_boss()
         logger.info("世界首领已复活")

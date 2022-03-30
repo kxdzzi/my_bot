@@ -33,7 +33,7 @@ async def _(event: GroupMessageEvent):
 @scheduler.scheduled_job("cron", hour=8, minute=0)
 async def _():
     '''每天零点重置签到人数'''
-    if config.node_info.get("node") == "main":
+    if config.node_info.get("node") == config.node_info.get("main"):
         logger.info("正在重置签到人数")
         await source.reset_sign_nums()
         logger.info("签到人数已重置")
