@@ -273,11 +273,11 @@ async def _(bot: Bot, event: FriendRequestEvent):
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
-    user_black_list = db.bot_conf.find_one({
-        '_id': 1
-    }).get("user_black_list", [])
-    approve = (bot_id not in out_of_work_bot) and (user_id
-                                                   not in user_black_list)
+    is_black = db.client["management"].user_black_list.find_one({
+        '_id': user_id,
+        "block_time": {"$gte": datetime.datetime.now()}
+    })
+    approve = (bot_id not in out_of_work_bot) and (not is_black)
     await bot.set_friend_add_request(
         flag=event.flag,
         approve=approve,
@@ -290,12 +290,16 @@ async def _(bot: Bot, event: GroupRequestEvent):
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     group_id = event.group_id
-    bot_conf_con = db.bot_conf.find_one({'_id': 1})
-    user_black_list = bot_conf_con.get("user_black_list", [])
-    group_black_list = bot_conf_con.get("group_black_list", [])
+    is_user_black = db.client["management"].user_black_list.find_one({
+        '_id': user_id,
+        "block_time": {"$gte": datetime.datetime.now()}
+    })
+    is_group_black = db.client["management"].group_black_list.find_one({
+        '_id': group_id,
+        "block_time": {"$gte": datetime.datetime.now()}
+    })
     approve, reason = await source.check_add_bot_to_group(bot, group_id)
-    approve = approve and (user_id not in user_black_list) and (
-        group_id not in group_black_list)
+    approve = approve and (not is_user_black) and (not is_group_black)
 
     if not approve:
         logger.info(
