@@ -69,6 +69,8 @@ async def register_bot(bot: Bot):
         "$set": {
             "online_status": True,
             "bot_name": bot_name,
+            "node_name": config.node_info.get("node"),
+            "node_domain": config.node_info.get("domain"),
             "login_data": datetime.now()
         }
     }, True)
