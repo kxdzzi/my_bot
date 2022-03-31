@@ -658,7 +658,18 @@ async def save_skill(user_id, res):
     return f"保存武学配置{setting_name}成功！"
 
 
-async def view_skill(user_id):
+async def view_skill(res):
+    """查看武学配置"""
+    if len(res) != 1:
+        return "输入格式错误"
+    sk = Skill()
+    武学 = sk.skill.get(res[0])
+    if not 武学:
+        return "找不到该武学"
+    return 武学["招式"].__doc__.strip()
+
+
+async def view_skill_set(user_id):
     """查看武学配置"""
     con = db.jianghu.find_one({"_id": user_id})
     user_info = UserInfo(user_id)
