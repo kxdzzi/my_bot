@@ -351,57 +351,84 @@ async def compose(user_id, res):
         return f"材料合成完成：{'、'.join([f'{k}{v:+}' for k, v in 装备列表 if v != 0])}"
     elif res[0] == "合成图纸":
         图纸 = con.get("图纸", {})
+        原始图纸 = copy.deepcopy(图纸)
         if not 图纸:
             return "你没有图纸"
         用户图纸列表 = []
-        过滤条件 = list(set(re.findall(r" *(武器|外装|饰品) *", " ".join(res))))
-        用户输入图纸列表 = list(set(re.findall(r" *(武器\d+|外装\d+|饰品\d+) *", " ".join(res))))
-        参与合成等级列表 = re.findall(r" (\d+) *", " ".join(res))
-        参与合成等级 = 1500
-        if 参与合成等级列表:
-            参与合成等级 = int(参与合成等级列表[0])
-            if 参与合成等级 > 1500:
-                参与合成等级 = 1500
-        用户图纸列表 = [i for i in 用户输入图纸列表 if i in 图纸]
-        if 用户图纸列表:
-            图纸列表 = 用户图纸列表
-        else:
-            图纸列表 = list(图纸.keys())
-        图纸列表 = [i for i in 图纸列表 if int(i[2:]) <= 参与合成等级]
-        if len(图纸列表) < 2:
-            return "图纸不存在，或是输入的条件不太对。(单张图纸超过1500无法合成)"
+        用户输入图纸列表 = []
+        过滤条件 = []
+        等级限制 = []
+        合成最高等级 = 0
+        for r in res:
+            if re.match(r"^(武器\d+|外装\d+|饰品\d+)$", r):
+                用户输入图纸列表.append(r)
+            if re.match(r"^(武器|外装|饰品)$", r):
+                过滤条件.append(r)
+            if re.match(r"^(\d+)-(\d+)$", r):
+                等级限制 = list(map(int, r.split("-")))
+            if re.match(r"^(\d+)$", r):
+                合成最高等级 = int(r)
+        if not any([过滤条件, 等级限制, 合成最高等级, 用户输入图纸列表]) and len(res) > 1:
+            return "你看看你整了些啥?命令没学会就去看看江湖闯荡指南!"
 
-        得到图纸列表 = []
+        if 用户输入图纸列表 and not any([过滤条件, 等级限制, 合成最高等级]):
+            过滤条件 = []
+        elif not 过滤条件:
+            过滤条件 = ["武器", "外装", "饰品"]
+
+        if 合成最高等级 > 3000 or 合成最高等级 == 0:
+            合成最高等级 = 3000
+        最低, 最高 = 1, 合成最高等级
+        if 等级限制:
+            最低, 最高 = min(等级限制), max(等级限制)
+        if 最高 > 1500:
+            最高 = 1500
         while True:
-            if 用户图纸列表:
-                图纸列表 = copy.deepcopy(用户图纸列表)
-            else:
-                图纸列表 = copy.deepcopy(图纸)
-                图纸列表 = list(图纸列表.keys())
-                if 过滤条件:
-                    图纸列表 = [i for i in 图纸列表 if i[:2] in 过滤条件]
-            图纸列表 = [i for i in 图纸列表 if int(i[2:]) <= 参与合成等级]
-            图纸列表长度 = len(图纸列表)
-            if 图纸列表长度 <= 1:
+            # 按条件过滤图纸
+            用户图纸列表 = [i for i in 用户输入图纸列表 if i in 图纸]
+            过滤后图纸 = list(set([i for i in 图纸.keys() if i[:2] in 过滤条件 and 最低 <= int(i[2:]) <=最高] + 用户图纸列表))
+            if not 过滤后图纸:
                 break
-            for i in range(1, 图纸列表长度, 2):
-                消耗图纸列表 = (图纸列表[i-1], 图纸列表[i])
-                获得图纸 = 合成图纸(*消耗图纸列表)
-                if int(获得图纸[2:]) > 参与合成等级:
-                    得到图纸列表.append(获得图纸)
+            # 排序
+            过滤后图纸 = sorted(过滤后图纸, key=lambda x: int(x[2:]), reverse=True)
+
+            # 首尾分组
+            for n, i in enumerate(过滤后图纸):
+                if (int(i[2:]) + int(过滤后图纸[-1][2:])) < 合成最高等级:
+                    break
+            可合成 = 过滤后图纸[n:]
+            待合成 = []
+            for i in range(len(可合成) // 2):
+                首, 尾 = 可合成[i], 可合成[-(i+1)]
+                if (int(首[2:]) + int(尾[2:])) <= 合成最高等级:
+                    待合成.append((首, 尾))
+            if not 待合成:
+                break
+            for x, y in 待合成:
+                获得图纸 = 合成图纸(x, y)
                 if not 图纸.get(获得图纸):
                     图纸[获得图纸] = 0
                 图纸[获得图纸] += 1
-                for 图纸耗材 in 消耗图纸列表:
-                    图纸[图纸耗材] -= 1
-                    if 图纸[图纸耗材] <= 0:
-                        del 图纸[图纸耗材]
-                if 用户图纸列表:
-                    del 用户图纸列表[0]
-                    del 用户图纸列表[0]
-                    用户图纸列表.append(获得图纸)
-        db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸}}, True)
-        return "图纸合成完成：" + f"{'、'.join(得到图纸列表+图纸列表)}"
+                图纸[x] -= 1
+                图纸[y] -= 1
+                for n in (x, y):
+                    if 图纸[n] <= 0:
+                        del 图纸[n]
+        最终合成结果 = {}
+        for i in set(图纸.keys()) | set(原始图纸.keys()):
+            if i not in 最终合成结果 :
+                最终合成结果[i] = 0
+            最终合成结果[i] -= 原始图纸.get(i, 0)
+            最终合成结果[i] += 图纸.get(i, 0)
+            结果列表 = sorted(最终合成结果.items(), key=lambda x: int(x[0][2:]), reverse=True)
+        结果列表 = [f'{k}{v:+}' for k, v in 结果列表 if v != 0]
+        end = " ..." if len(结果列表) > 20 else ""
+        if 结果列表:
+            msg = f"图纸合成完成：{'、'.join(结果列表[:20])}{end}"
+            db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸}}, True)
+        else:
+            msg = "你输入的条件根本找不到图纸!自己打开背包检查一下去!"
+        return msg
     return "输入错误"
 
 
