@@ -20,16 +20,21 @@
 </head>
 
 <body>
-    <div id="main"  style="text-align:center;width: 300px;padding: 10px;background-image: url('img/bg.png');">
+    <div id="main"  style="text-align:center;width: 400px;padding: 10px;background-image: url('img/bg.png');">
         <h3>{{ 持有人 }}<span style="color:rgb(136, 57, 43);">的</span>装备</h3>
         <br>
         <div>
             {% for i in 装备 %}
+            <div>
                 {% if i.是否装备 %}
-	            <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip" style="color:rgb(26, 84, 122);">{{i.名称}}</span> {{i.装备分数}}</div>
+	            <span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip" style="color:rgb(26, 84, 122);">{{i.名称}}</span> {{i.装备分数}}
                 {% else %}
-		        <div><span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip">{{i.名称}}</span> {{i.装备分数}}</div>
+		        <span style="color:rgb(42, 44, 40);font-size: 16px;">{{i.标记}}</span><span class="equip">{{i.名称}}</span> {{i.装备分数}}
                 {% endif %}
+                {% if i.镶嵌分数 %}
+                <span style="color:rgb(79, 139, 19);font-size: 13px;">+{{i.镶嵌分数}}</span>
+                {% endif %}
+            </div>
             {% endfor %}
         </div>
         <br>

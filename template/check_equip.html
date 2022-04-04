@@ -19,7 +19,7 @@
 </head>
 
 <body>
-    <div id="main"  style="width: 300px;padding: 20px;background-image: url('img/bg.png');">
+    <div id="main"  style="width: 400px;padding: 20px;background-image: url('img/bg.png');">
         {% for data in datas %}
         <div>
             {% if data.镶嵌分数 %}
@@ -47,8 +47,8 @@
             </div>
             <br>
             <div >
-                {% for i in data.镶嵌属性 %}
                 镶嵌属性
+                {% for i in data.镶嵌属性 %}
                 <div>{{ i }}：<span style="color: rgb(143, 111, 8);">{{ data.镶嵌属性[i] }}</span></div>
                 {% endfor %}
             </div>
