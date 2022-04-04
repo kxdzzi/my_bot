@@ -44,7 +44,11 @@
                         <h4>根骨：{{ base_attribute.根骨 }}</h4>
                         <h4>力道：{{ base_attribute.力道 }}</h4>
                         <h4>元气：{{ base_attribute.元气 }}</h4>
-                        <h4>善恶值：<strong style="color:rgb(136, 57, 43);">{{ base_attribute.善恶值 }}</strong></h4>
+                        {% if base_attribute.善恶值 < 0 %}
+                            <h4>善恶值：<strong style="color:rgb(136, 57, 43);">{{ base_attribute.善恶值 }}</strong></h4>
+                        {% else %}
+                            <h4>善恶值：<strong style="color:rgb(65, 136, 43);">{{ base_attribute.善恶值 }}</strong></h4>
+                        {% endif %}
                     </div>
                     <div class="col-8">
                         {% if user_stat.当前气血 < user_stat.气血上限/2 %}
