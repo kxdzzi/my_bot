@@ -22,7 +22,11 @@
     <div id="main"  style="width: 300px;padding: 20px;background-image: url('img/bg.png');">
         {% for data in datas %}
         <div>
+            {% if data.镶嵌分数 %}
+            <h2 class="equip">【{{ data._id }}】<span style="font-size: 17px;">({{ data.装备分数 }} + {{data.镶嵌分数}})</span></h2>
+            {% else %}
             <h2 class="equip">【{{ data._id }}】<span style="font-size: 17px;">({{ data.装备分数 }})</span></h2>
+            {% endif %}
         </div>
         <br>
         <div style="font-size: 17px;padding-left:20px">
@@ -39,6 +43,13 @@
             <div >
                 {% for i in data.附加属性 %}
                 <div>{{ i }}：<span style="color: rgb(56, 121, 19);">{{ data.附加属性[i] }}</span></div>
+                {% endfor %}
+            </div>
+            <br>
+            <div >
+                {% for i in data.镶嵌属性 %}
+                镶嵌属性
+                <div>{{ i }}：<span style="color: rgb(143, 111, 8);">{{ data.镶嵌属性[i] }}</span></div>
                 {% endfor %}
             </div>
             <br>

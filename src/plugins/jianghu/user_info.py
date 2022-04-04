@@ -124,6 +124,8 @@ class UserInfo():
         for i in self.装备列表:
             for k, v in i.get("附加属性", {}).items():
                 self.动态状态[k] += v
+            for k, v in i.get("镶嵌属性", {}).items():
+                self.动态状态[k] += v
 
     def 计算当前状态(self):
         self.初始化状态()

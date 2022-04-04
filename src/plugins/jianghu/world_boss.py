@@ -38,7 +38,6 @@ async def world_boss(user_id, 世界首领名称):
 
 
 def start_resurrection_world_boss():
-    db.user_info.update_many({}, {"$set": {"world_boss_num": 0}}, True)
     project = {"_id": 1, "体质": 1, "根骨": 1}
     if 已重伤首领 := db.npc.find({"类型": "首领", "重伤状态": True}, projection=project):
         已重伤首领列表 = list(已重伤首领)

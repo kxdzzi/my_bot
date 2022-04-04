@@ -21,6 +21,7 @@ Export.default_status = True
 my_info = on_regex(r"^个人信息$", permission=GROUP, priority=5, block=True)
 set_name = on_regex(r"^改名 .{0,8}$", permission=GROUP, priority=5, block=True)
 jianghu = on_regex(r"^江湖$", permission=GROUP, priority=5, block=True)
+dig_for_treasure = on_regex(r"^挖宝$", permission=GROUP, priority=5, block=True)
 give_gold = on_regex(r"^赠送银两 *\[CQ:at,qq=\d+\] *\d+$",
                      permission=GROUP,
                      priority=5,
@@ -66,6 +67,14 @@ pk_log = on_regex(r"^战斗记录 *\d+$", permission=GROUP, priority=5, block=Tr
 compose = on_regex(r"^合成(材料|图纸).*?$", permission=GROUP, priority=5, block=True)
 
 build_equipment = on_regex(r"^打造装备 .+? .+?$",
+                           permission=GROUP,
+                           priority=5,
+                           block=True)
+inlay_equipment = on_regex(r"^镶嵌装备 .+? .+?$",
+                           permission=GROUP,
+                           priority=5,
+                           block=True)
+discard_equipment = on_regex(r"^丢弃装备 .+?$",
                            permission=GROUP,
                            priority=5,
                            block=True)
@@ -160,6 +169,16 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     logger.info(f"<y>群{group_id}</y> | <g>{user_id}</g> | 查看个人信息")
     msg = await source.set_name(user_id, res)
     await set_name.finish(msg)
+
+
+@dig_for_treasure.handle()
+async def _(event: GroupMessageEvent):
+    '''改名'''
+    user_id = event.user_id
+    group_id = event.group_id
+    logger.info(f"<y>群{group_id}</y> | <g>{user_id}</g> | 挖宝")
+    msg = await source.dig_for_treasure(user_id)
+    await dig_for_treasure.finish(msg)
 
 
 @put_on_shelves.handle()
@@ -379,6 +398,24 @@ async def _(event: GroupMessageEvent):
     text = event.get_plaintext()
     msg = await source.build_equipment(user_id, text)
     await build_equipment.finish(msg)
+
+
+@inlay_equipment.handle()
+async def _(event: GroupMessageEvent):
+    """镶嵌装备"""
+    user_id = event.user_id
+    text = event.get_plaintext()
+    msg = await source.inlay_equipment(user_id, text)
+    await inlay_equipment.finish(msg)
+
+
+@discard_equipment.handle()
+async def _(event: GroupMessageEvent):
+    """丢弃装备"""
+    user_id = event.user_id
+    text = event.get_plaintext()
+    msg = await source.discard_equipment(user_id, text)
+    await discard_equipment.finish(msg)
 
 
 @compose.handle()

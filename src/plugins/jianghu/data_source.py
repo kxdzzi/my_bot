@@ -15,7 +15,7 @@ from src.utils.db import db
 from src.utils.log import logger
 from src.utils.browser import browser
 from src.plugins.jianghu.shop import shop
-from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 材料等级表
+from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表
 from src.plugins.jianghu.jianghu import PK
 from src.plugins.jianghu.world_boss import world_boss, start_resurrection_world_boss
 from src.utils.cooldown_time import search_record, search_once
@@ -101,10 +101,32 @@ async def set_name(user_id, res):
     return "改名成功" + msg
 
 
+async def dig_for_treasure(user_id):
+    精力 = db.user_info.find_one({"_id": user_id}).get("energy", 0)
+    if 精力 < 10:
+        return f"精力不足, 你只有{精力}精力, 挖宝需要10精力"
+    装备池 = list(db.equip.find({"持有人": -2}, projection={"装备分数": 1, "镶嵌分数": 1}))
+    if 10 < random.randint(0, len(装备池)):
+        装备 = random.choice(装备池)
+        装备名称 = 装备["_id"]
+        装备分数 = 装备.get("装备分数", 0) + 装备.get("镶嵌分数", 0)
+        db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10}})
+        db.equip.update_one({"_id": 装备名称}, {"$set": {"持有人": user_id}})
+        msg = f"获得装备【{装备名称}】({装备分数}), 精力-10, 当前精力{精力-10}"
+    else:
+        获得银两 = random.randint(1000, 5000)
+        db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10, "gold": 获得银两}})
+        msg = f"获得{获得银两}两银子, 精力-10, 当前精力{精力-10}"
+    return msg
+
+
 async def give_gold(user_id, user_name, at_qq, gold):
     '''赠送银两'''
 
     logger.debug(f"赠送银两 | <e>{user_id} -> {at_qq}</e> | {gold}")
+    user_info = UserInfo(at_qq)
+    if user_info.名称 == "无名":
+        return "对方未改名, 无法赠送银两"
     con = db.user_info.find_one({"_id": user_id})
     if not con:
         con = {}
@@ -310,6 +332,80 @@ async def build_equipment(user_id, res):
     return msg
 
 
+async def discard_equipment(user_id, res):
+    """丢弃装备"""
+    if len(res.split()) != 2:
+        return "输入错误"
+    装备_re = re.compile(r" (.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{1})")
+    装备list = 装备_re.findall(res)
+    if not 装备list:
+        return "输入错误"
+    装备名称 = 装备list[0]
+    善恶值 = db.jianghu.find_one({"_id": user_id})["善恶值"]
+    装备 = db.equip.find_one({"_id": 装备名称})
+    if 装备["持有人"] != user_id:
+        return "你没有这件装备"
+    用户装备 = db.jianghu.find_one({"_id": user_id})["装备"]
+    if 装备['_id'] == 用户装备[装备["类型"]]:
+        return "该装备正在使用, 无法丢弃"
+    装备["持有人"] = -2
+    db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
+    装备分数 = 装备.get("装备分数", 0) + 装备.get("镶嵌分数", 0)
+    if 装备["打造人"] != user_id:
+        return f"丢弃装备【{装备名称}】({装备分数})成功, 丢弃非自己打造的装备无法获得善恶值"
+    discard_equipment_num = db.user_info.find_one_and_update(
+            filter={"_id": user_id},
+            update={"$inc": {"discard_equipment_num": 1}},
+            upsert=True
+        ).get("discard_equipment_num", 0)
+    剩余次数 = 5 - discard_equipment_num
+    if 剩余次数 <= 0:
+        return f"丢弃装备【{装备名称}】({装备分数})成功, 每天只可以获得5次善恶值"
+    善恶增加上限 = int(装备分数 / 1000 - abs(善恶值 / 200))
+    if 善恶增加上限 < 0:
+        善恶增加上限 = 0
+    增加善恶值 = random.randint(0, 善恶增加上限)
+    当前善恶值 = db.jianghu.find_one_and_update(
+            filter={"_id": user_id},
+            update={"$inc": {"善恶值": 增加善恶值}},
+            upsert=True
+        ).get("善恶值", 0)
+    return f"丢弃装备【{装备名称}】({装备分数})成功, 善恶值+{增加善恶值}, 当前善恶值: {当前善恶值+增加善恶值}\n"\
+           f"今日已获得善恶值: {discard_equipment_num+1}/5次"
+
+
+async def inlay_equipment(user_id, res):
+    """镶嵌装备"""
+    if len(res.split()) != 3:
+        return "输入错误"
+    材料re = re.compile(" ([赤橙黄绿青蓝紫彩][金木水火土])")
+    装备_re = re.compile(r" (.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{1})")
+    材料list = 材料re.findall(res)
+    装备list = 装备_re.findall(res)
+    if not all([材料list, 装备list]):
+        return "输入错误"
+    材料名称 = 材料list[0]
+    装备名称 = 装备list[0]
+
+    # con = db.knapsack.find_one({"_id": user_id})
+    善恶值 = db.jianghu.find_one({"_id": user_id})["善恶值"]
+    装备 = db.equip.find_one({"_id": 装备名称})
+    if 装备["持有人"] != user_id:
+        return "你没有这件装备"
+    # if con:
+    #     材料 = con.get("材料", {})
+    #     材料数量 = 材料.get(材料名称, 0)
+    # if 材料数量 < 1:
+    #     return "材料不足"
+    # 材料数量 -= 1
+    # 材料[材料名称] = 材料数量
+    # if 材料数量 == 0:
+    #     del 材料[材料名称]
+    装备 = 镶嵌装备(装备, 材料名称, 善恶值)
+    db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
+    return f'镶嵌分数: {装备["镶嵌分数"]}, 镶嵌属性: {装备["镶嵌属性"]}'
+
+
 async def compose(user_id, res):
     con = db.knapsack.find_one({"_id": user_id})
     if not con:
@@ -481,7 +577,7 @@ async def my_gear(user_id, 内容):
     装备data_list = []
     for con in cons:
         是否装备 = user_info.基础属性["装备"].get(con["类型"]) == con['_id']
-        装备data = {"名称": con['_id'], "装备分数": con.get('装备分数', 0), "是否装备": 是否装备}
+        装备data = {"名称": con['_id'], "装备分数": con.get('装备分数', 0) + con.get('镶嵌分数', 0), "是否装备": 是否装备}
         if con.get('标记'):
             装备data['标记'] = f"[{con.get('标记')}]"
         装备data_list.append(装备data)
@@ -510,6 +606,8 @@ async def check_gear(user_id, res):
         data['打造人'] = 打造人_info.基础属性['名称']
         if data['持有人'] == -1:
             data['持有人'] = "售卖中"
+        elif data['持有人'] == -2:
+            data['持有人'] = "埋藏"
         else:
             持有人_info = UserInfo(data['持有人'])
             data['持有人'] = 持有人_info.基础属性['名称']
@@ -818,6 +916,9 @@ async def pk(动作, user_id, at_qq):
 
 
 async def give(user_id, at_qq, 物品列表):
+    user_info = UserInfo(at_qq)
+    if user_info.名称 == "无名":
+        return "对方未改名, 无法赠送"
     材料re = re.compile(r"^([赤橙黄绿青蓝紫彩][金木水火土])$")
     图纸re = re.compile(r"^([武器外装饰品]{2}\d+)$|^(图纸(\d+-\d+){0,1})$")
     装备_re = re.compile(r"^(.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]{0,1})$")

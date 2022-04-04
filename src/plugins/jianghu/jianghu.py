@@ -73,10 +73,14 @@ class PK(Skill):
         return msg
 
     async def 秘境首领掉落(self, 击杀者: int, 秘境首领: UserInfo):
-        击败首领次数 = db.user_info.find_one({"_id": 击杀者}).get("dungeon_num", 0)
+        user_info = db.user_info.find_one({"_id": 击杀者})
+        击败首领次数 = user_info.get("dungeon_num", 0)
         if 击败首领次数 >= 5:
             return "每天只有前 5 次击败秘境首领可以获得奖励"
-        msg = f"今天第 {击败首领次数+1} 次击败秘境首领！<br>"
+        精力 = user_info.get("energy", 0)
+        if 精力 < 4:
+            return f"你只有{精力}精力, 无法获得奖励"
+        msg = f"今天第 {击败首领次数+1} 次击败秘境首领！消耗精力4, 当前精力{精力-4}<br>"
 
         掉落 = 秘境首领.基础属性["掉落"]
         物品 = random.choice(list(掉落.keys()))
@@ -106,7 +110,7 @@ class PK(Skill):
             秘境进度[秘境首领.基础属性["秘境"]] = {}
         秘境进度[秘境首领.基础属性["秘境"]][秘境首领.名称] = True
         db.jianghu.update_one({"_id": 击杀者}, {"$set": {"秘境进度": 秘境进度}}, True)
-        db.user_info.update_one({"_id": 击杀者}, {"$inc": {"dungeon_num": 1}}, True)
+        db.user_info.update_one({"_id": 击杀者}, {"$inc": {"dungeon_num": 1, "energy": -4}}, True)
         msg += 秘境首领.基础属性["提示"]
         return msg
 
