@@ -387,20 +387,20 @@ async def inlay_equipment(user_id, res):
     材料名称 = 材料list[0]
     装备名称 = 装备list[0]
 
-    # con = db.knapsack.find_one({"_id": user_id})
+    con = db.knapsack.find_one({"_id": user_id})
     善恶值 = db.jianghu.find_one({"_id": user_id})["善恶值"]
     装备 = db.equip.find_one({"_id": 装备名称})
     if 装备["持有人"] != user_id:
         return "你没有这件装备"
-    # if con:
-    #     材料 = con.get("材料", {})
-    #     材料数量 = 材料.get(材料名称, 0)
-    # if 材料数量 < 1:
-    #     return "材料不足"
-    # 材料数量 -= 1
-    # 材料[材料名称] = 材料数量
-    # if 材料数量 == 0:
-    #     del 材料[材料名称]
+    if con:
+        材料 = con.get("材料", {})
+        材料数量 = 材料.get(材料名称, 0)
+    if 材料数量 < 1:
+        return "材料不足"
+    材料数量 -= 1
+    材料[材料名称] = 材料数量
+    if 材料数量 == 0:
+        del 材料[材料名称]
     装备 = 镶嵌装备(装备, 材料名称, 善恶值)
     db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
     return f'镶嵌分数: {装备["镶嵌分数"]}, 镶嵌属性: {装备["镶嵌属性"]}'
