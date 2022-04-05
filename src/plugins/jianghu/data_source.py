@@ -104,6 +104,7 @@ async def set_name(user_id, res):
 async def dig_for_treasure(user_id):
     精力 = db.user_info.find_one({"_id": user_id}).get("energy", 0)
     if 精力 < 10:
+        精力 = 0
         return f"精力不足, 你只有{精力}精力, 挖宝需要10精力"
     装备池 = list(db.equip.find({"持有人": -2}, projection={"装备分数": 1, "镶嵌分数": 1}))
     if 10 < random.randint(0, len(装备池)):
@@ -676,10 +677,44 @@ async def claim_rewards(user_id):
         contribution = int(user.get("contribution", 0))
     if not contribution:
         return "你没有贡献值"
-    获得银两 = contribution
-    db.user_info.find_one_and_update({"_id": user_id}, {"$inc": {"gold": 获得银两}})
-    return f"消耗{contribution}贡献值, 获得银两{获得银两}"
-
+    获得银两 = random.randint(0, contribution//7)
+    contribution -= 获得银两
+    图纸分 = contribution // 3
+    材料分 = contribution - 图纸分
+    获得彩材料 = 材料分 // 900000
+    获得紫材料 = (材料分 - 获得彩材料*900000) // 150000
+    if 获得紫材料 < 0:
+        获得紫材料 = 0
+    获得图纸 = 图纸分 // 600000
+    背包 = db.knapsack.find_one({"_id": user_id})
+    图纸 = 背包.get("图纸", {})
+    材料 = 背包.get("材料", {})
+    msg = ""
+    for _ in range(获得彩材料):
+        材料属性 = random.choice("金木水火土")
+        获得材料名称 = "彩" + 材料属性
+        if 获得材料名称 not in 材料:
+            材料[获得材料名称] = 0
+        材料[获得材料名称] += 1
+        msg += f", {获得材料名称}"
+    for _ in range(获得紫材料):
+        材料属性 = random.choice("金木水火土")
+        获得材料名称 = "紫" + 材料属性
+        if 获得材料名称 not in 材料:
+            材料[获得材料名称] = 0
+        材料[获得材料名称] += 1
+        msg += f", {获得材料名称}"
+    for _ in range(获得图纸):
+        图纸等级 = random.randint(2000, 3000)
+        图纸类型 = random.choice(["武器", "饰品", "外装"])
+        获得图纸名称 = 图纸类型 + str(图纸等级)
+        if 获得图纸名称 not in 图纸:
+            图纸[获得图纸名称] = 0
+        图纸[获得图纸名称] += 1
+        msg += f", {获得图纸名称}"
+    db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸, "材料": 材料}})
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": 获得银两}})
+    return f"消耗{contribution}贡献值, 获得银两{获得银两}" + msg
 
 
 async def start_dungeon(user_id, res):

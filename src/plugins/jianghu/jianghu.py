@@ -79,6 +79,7 @@ class PK(Skill):
             return "每天只有前 5 次击败秘境首领可以获得奖励"
         精力 = user_info.get("energy", 0)
         if 精力 < 4:
+            精力 = 0
             return f"你只有{精力}精力, 无法获得奖励"
         msg = f"今天第 {击败首领次数+1} 次击败秘境首领！消耗精力4, 当前精力{精力-4}<br>"
 
@@ -284,7 +285,7 @@ class PK(Skill):
             if 攻方.本次伤害:
                 if not data.get("结算"):
                     data["结算"] = ""
-                data["结算"] += f"{攻方.基础属性['名称']} 对 {守方.基础属性['名称']} 造成了 {攻方.本次伤害} 伤害，贡献值 +{贡献值}"
+                data["结算"] += f"{攻方.基础属性['名称']} 对 {守方.基础属性['名称']} 造成了 {攻方.本次伤害} 伤害，贡献值 +{贡献值}, 精力-4"
                 db.user_info.update_one({"_id": 攻方.user_id},
                                       {"$inc": {"contribution": 贡献值}}, True)
                 if data["守方"]["气血百分比"] < 70 < data["守方"]["气血百分比"]+data["守方"]["减血百分比"]:
@@ -300,9 +301,9 @@ class PK(Skill):
                     db.user_info.update_one({"_id": 攻方.user_id}, {"$mul": {"contribution": 1.2}}, True)
                     data["结算"] += f"<br>首领气被击败！当前贡献值提高 20%！"
                 user = db.user_info.find_one({"_id": 攻方.user_id})
-                攻击次数 = user['world_boss_num']
-                data["结算"] += f"<br>当前贡献：{int(user['contribution'])}<br>剩余攻击次数: {5-攻击次数}"
-                logger.info(f"<y>{攻方.名称}</y> | <g>世界首领</g> | 伤害：{攻方.本次伤害} | 首领气血：{守方.当前气血}/{守方.当前状态['气血上限']} | 攻击次数：{攻击次数}")
+                精力 = user['energy']
+                data["结算"] += f"<br>当前贡献：{int(user['contribution'])}<br>当前精力: {精力}"
+                logger.info(f"<y>{攻方.名称}</y> | <g>世界首领</g> | 伤害：{攻方.本次伤害} | 首领气血：{守方.当前气血}/{守方.当前状态['气血上限']} | 精力：{精力}")
 
         if action == "秘境首领":
             data["守方"]["类型"] = "首领"

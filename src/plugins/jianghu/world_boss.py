@@ -16,21 +16,20 @@ async def world_boss(user_id, 世界首领名称):
         for 首领 in 存活的首领:
             msg += f"\n【{首领['名称']}】({首领['当前气血']})"
         return msg
-    n_cd_time = 10
+    n_cd_time = 5
     app_name = "世界首领"
-    world_boss_num = db.user_info.find_one_and_update(
+    user_info = db.user_info.find_one_and_update(
             filter={"_id": user_id},
-            update={"$inc": {"world_boss_num": 1}},
+            update={"$inc": {"energy": -4}},
             upsert=True
-        ).get("world_boss_num", 0)
-    剩余次数 = 5 - world_boss_num
-    if 剩余次数 < -1:
-        return
-    if 剩余次数 <= 0:
-        return MessageSegment.at(user_id) + "进攻次数用尽，发送“领取首领奖励”可以领取奖励"
+        )
+    精力 = user_info.get("energy", 0)
+    if 精力 < 4:
+        精力 = 0
+        return f"你只有{精力}精力, 无法获得奖励"
     flag, cd_time = await search_record(user_id, app_name, n_cd_time)
     if not flag:
-        msg = MessageSegment.at(user_id) + f"{cd_time}后才可以继续进攻，还可以进攻当前首领{剩余次数-1}次"
+        msg = MessageSegment.at(user_id) + f"{cd_time}后才可以继续进攻, 精力-4, 当前精力: {精力-4}"
         return msg
     await search_once(user_id, app_name)
     战斗 = PK()
