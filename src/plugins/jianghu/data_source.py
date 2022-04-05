@@ -401,6 +401,7 @@ async def inlay_equipment(user_id, res):
     材料[材料名称] = 材料数量
     if 材料数量 == 0:
         del 材料[材料名称]
+    db.knapsack.update_one({"_id": user_id}, {"$set": {"材料": 材料}}, True)
     装备 = 镶嵌装备(装备, 材料名称, 善恶值)
     db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
     return f'镶嵌分数: {装备["镶嵌分数"]}, 镶嵌属性: {装备["镶嵌属性"]}'
