@@ -507,7 +507,7 @@ async def _(event: GroupMessageEvent):
     """查看武学配置"""
     user_id = event.user_id
     msg = await source.view_skill_set(user_id)
-    await view_skill.view_skill_set(msg)
+    await view_skill_set.finish(msg)
 
 
 @world_boss.handle()
