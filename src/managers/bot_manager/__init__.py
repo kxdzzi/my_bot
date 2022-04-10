@@ -37,7 +37,7 @@ async def pull_off_shelves():
     """下架商品"""
     shelves = db.auction_house.find({
         '日期': {
-            "$lte": datetime.datetime.today() + datetime.timedelta(hours=-48)
+            "$lte": datetime.datetime.today() + datetime.timedelta(days=-5)
         }
     })
 
@@ -46,7 +46,7 @@ async def pull_off_shelves():
     logger.info("自动下架商品完成")
 
 
-@scheduler.scheduled_job("cron", hour=8, minute=48)
+@scheduler.scheduled_job("cron", hour=4, minute=0)
 async def _():
     '''每天4点开始偷偷的干活'''
     if config.node_info.get("node") == "main":
