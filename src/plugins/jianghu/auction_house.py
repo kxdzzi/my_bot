@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 import math
 
+from src.utils.log import logger
 from src.utils.db import db
 from src.utils.email import mail_client
 from src.plugins.jianghu.equipment import 材料等级表, 装备类型表
@@ -66,6 +67,7 @@ async def 上架商品(寄售人id, 商品名称, 价格, 备注=""):
     }
     # 上架
     编号 = db.insert_auto_increment("auction_house", data)
+    logger.info(f"上架商品: {寄售人id} 上架{商品名称}({编号})成功！")
     return f"上架[{商品名称}]成功！商品编号：{编号}"
 
 
@@ -129,6 +131,7 @@ async def 下架商品(操作人id, 商品id):
         db.equip.update_one({"_id": 商品名称}, {"$set": {"持有人": 操作人id}}, True)
     # 交易行删除商品
     db.auction_house.delete_one({"_id": 商品id})
+    logger.info(f"下架商品: {操作人id}下架{商品名称}({商品id})成功！")
     return f"下架{商品名称}成功！"
 
 
@@ -172,6 +175,7 @@ async def 购买商品(购买人id, 商品id):
     await mail_client.send_mail(
         [寄售人], f"{商品名称}售卖成功通知",
         f"您寄售的[{商品名称}]于{当前时间}，被【{购买人.基础属性['名称']}】以{商品价格}两银子买走。扣除手续费{手续费}，共获得{获得银两}")
+    logger.info(f"购买商品: {寄售人}[{商品名称}]({商品id}) -({商品价格})-> {购买人.基础属性['名称']}({购买人id})")
     return f"购买成功！花费{商品价格}两银子，获得[{商品名称}]"
 
 

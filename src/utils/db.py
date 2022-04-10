@@ -77,8 +77,8 @@ class DB():
         if self.client:
             self.client.close()
 
+
 db = DB()
 
 if __name__ == "__main__":
     pass
-
