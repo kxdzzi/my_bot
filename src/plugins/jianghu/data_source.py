@@ -234,7 +234,7 @@ async def sell_equipment(user_id, 装备名称: str):
             if 装备名称 == 装备[con["类型"]] or con.get("标记"):
                 continue
             银两 = 装备价格(con)
-            if (装备.get("装备分数", 0) + 装备.get("镶嵌分数", 0)) <= 售卖分数:
+            if (con.get("装备分数", 0) + con.get("镶嵌分数", 0)) <= 售卖分数:
                 获得银两 += 银两
                 db.equip.delete_one({"_id": 装备名称})
     else:
