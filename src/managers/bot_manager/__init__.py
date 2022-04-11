@@ -49,7 +49,7 @@ async def pull_off_shelves():
 @scheduler.scheduled_job("cron", hour=4, minute=0)
 async def _():
     '''每天4点开始偷偷的干活'''
-    if config.node_info.get("node") == "main":
+    if config.node_info.get("node") == config.node_info.get("main"):
         await remove_group_conf()
         await archive_river_lantern()
         await pull_off_shelves()
