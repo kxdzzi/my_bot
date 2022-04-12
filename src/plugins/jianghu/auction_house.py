@@ -182,7 +182,7 @@ async def 购买商品(购买人id, 商品id):
 async def 查找商品(condition=""):
     condition_list = condition.split()
     filter = {}
-    sort = {}
+    sort = {"日期": -1}
     for i in condition_list[1:]:
         if re.findall(".+\d+-\d+", i):
             if i[:2] not in ("等级", "价格"):
@@ -200,8 +200,6 @@ async def 查找商品(condition=""):
                 filter["类型"] = i
             else:
                 filter["名称"] = {"$regex": i}
-    if not sort:
-        sort = {"_id": -1}
     总数 = db.auction_house.count_documents(filter)
     当前页 = 1
     if 当前页re := re.findall("\d+", condition_list[0]):

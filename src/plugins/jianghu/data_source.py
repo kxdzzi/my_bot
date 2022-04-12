@@ -234,7 +234,7 @@ async def sell_equipment(user_id, 装备名称: str):
             if 装备名称 == 装备[con["类型"]] or con.get("标记"):
                 continue
             银两 = 装备价格(con)
-            if 银两 < 售卖分数:
+            if (con.get("装备分数", 0) + con.get("镶嵌分数", 0)) <= 售卖分数:
                 获得银两 += 银两
                 db.equip.delete_one({"_id": 装备名称})
     else:
@@ -1134,22 +1134,30 @@ async def good_guys_ranking(bot: Bot, user_id):
         msg += f"{n+1} {i['名称']} {i['善恶值']}\n"
     return msg
 
+
 async def gear_ranking(bot: Bot, user_id):
     '''神兵排行'''
     logger.debug(f"神兵排行 | <e>{user_id}</e>")
-    filter = {}
-    sort = list({'装备分数': -1}.items())
+    project = {
+        "总装分": {"$sum": ['$装备分数', '$镶嵌分数']},
+        "持有人": 1
+    }
+    sort = {'总装分': -1}
     limit = 10
     msg = "神兵排行\n"
 
-    result = db.equip.find(filter=filter, sort=sort, limit=limit)
+    result = db.equip.aggregate([
+        {"$project": project},
+        {"$sort": sort},
+        {"$limit": limit}
+    ])
     for n, i in enumerate(result):
         user_info = UserInfo(i['持有人'])
         名称 = user_info.基础属性["名称"]
         if 名称 == "无名":
             ret = await bot.get_stranger_info(user_id=i['_id'], no_cache=False)
             名称 = ret['nickname']
-        msg += f"{n+1} {名称} {i['_id']} {i['装备分数']}\n"
+        msg += f"{n+1} {名称} {i['_id']} {i['总装分']}\n"
     return msg
 
 
