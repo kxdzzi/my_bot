@@ -28,27 +28,33 @@ async def archive_river_lantern():
     })
     archive = db.client["archive"]["river_lantern"]
     for lantern in river_lantern_info:
-        archive.insert_one(lantern)
         db.river_lantern.delete_one(lantern)
+        del lantern["_id"]
+        archive.insert_one(lantern)
     logger.info("河灯归档完成")
 
 
 async def pull_off_shelves():
     """下架商品"""
-    shelves = db.auction_house.find({
-        '日期': {
-            "$lte": datetime.datetime.today() + datetime.timedelta(days=-5)
-        }
-    })
+    logger.info("下架商品")
+    try:
+        shelves = db.auction_house.find({
+            '日期': {
+                "$lte": datetime.datetime.today() + datetime.timedelta(days=-5)
+            }
+        })
 
-    for i in shelves:
-        await 下架商品(i["寄售人"], i["_id"])
-    logger.info("自动下架商品完成")
+        for i in shelves:
+            await 下架商品(i["寄售人"], i["_id"])
+        logger.info("自动下架商品完成")
+    except Exception as e:
+        logger.error(f"下架商品失败: {str(e)}")
 
 
 @scheduler.scheduled_job("cron", hour=4, minute=0)
 async def _():
     '''每天4点开始偷偷的干活'''
+
     if config.node_info.get("node") == config.node_info.get("main"):
         await remove_group_conf()
         await archive_river_lantern()
