@@ -172,16 +172,17 @@ async def check_add_bot_to_group(bot: Bot, group_id: int) -> tuple:
     out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
     bot_id = int(bot.self_id)
     access_group_num = db.bot_info.find_one({'_id': bot_id}).get("access_group_num", 50)
+    bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
     group_list = await bot.get_group_list()
     # 若群id不在管理群列表, 则需要进行加群条件过滤
     if group_id not in manage_group:
         if bot_id in out_of_work_bot:
             return False, "老子放假了，你拉别的二猫子去！"
-        elif len(group_list) >= access_group_num:
-            return False, "老子加的群太多了，烦都烦死了，你拉别的二猫子去！"
+        elif bot_group_num >= access_group_num:
+            return False, f"老子最多只能加{access_group_num}个群，现在都加了{bot_group_num}，机器人不用休息的吗？你赶紧拉别的二猫子去，别拉我了！"
         else:
             _con = db.group_conf.find_one({'_id': group_id})
-            if _con and _con.get("bot_id") != 0 != bot_id:
+            if _con and _con.get("bot_id") != 0 != int(bot_id):
                 return False, f"群内已有二猫子（{_con.get('bot_id')}），一群不容二二猫，再见！"
     return True, None
 
