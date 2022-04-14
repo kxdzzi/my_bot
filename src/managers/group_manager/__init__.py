@@ -81,7 +81,7 @@ exit_group = on_regex(pattern=r"^(退群 \d+)$",
                       priority=1,
                       block=True)
 
-bot_list = on_regex(pattern=r"^(机器人列表)$",
+bot_list = on_regex(pattern=r"^(机器人|二猫子)列表$",
                     permission=GROUP,
                     priority=5,
                     block=True)
@@ -326,14 +326,19 @@ async def _(event: GroupMessageEvent,
 
 @bot_list.handle()
 async def _(event: GroupMessageEvent):
-    '''查看机器人列表'''
+    '''查看二猫子列表'''
+    if not db.bot_info.count_documents({"work_stat": True}):
+        await bot_list.finish("暂无可用的二猫子")
     bot_info_list = db.bot_info.find({"work_stat": True})
-    msg = "  机器人QQ   | 群数量"
+    msg = "  二猫子QQ   | 群数量"
     for bot_info in bot_info_list:
         bot_id = int(bot_info.get("_id"))
-        access_group_num = db.bot_info.find_one({'_id': bot_id}).get("access_group_num", 50)
-        bot_group_list = db.group_conf.find({"bot_id": bot_id})
-        msg += f"\n{bot_id: 11d} | {len(list(bot_group_list))}/{access_group_num}"
+        db_bot_info = db.bot_info.find_one({'_id': bot_id})
+        access_group_num = db_bot_info.get("access_group_num", 50)
+        bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
+        msg += f"\n{bot_id: 11d} | {bot_group_num}/{access_group_num}"
+        if not db_bot_info.get("online_status", False):
+            msg = " ! " + msg
     await bot_list.finish(msg)
 
 
