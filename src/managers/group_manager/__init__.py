@@ -336,9 +336,8 @@ async def _(event: GroupMessageEvent):
         db_bot_info = db.bot_info.find_one({'_id': bot_id})
         access_group_num = db_bot_info.get("access_group_num", 50)
         bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
-        msg += f"\n{bot_id: 11d} | {bot_group_num}/{access_group_num}"
-        if not db_bot_info.get("online_status", False):
-            msg = " ! " + msg
+        on_line = "" db_bot_info.get("online_status", False) else " ! "
+        msg += f"\n{on_line}{bot_id: 11d} | {bot_group_num}/{access_group_num}"
     await bot_list.finish(msg)
 
 
