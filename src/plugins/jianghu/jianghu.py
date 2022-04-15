@@ -1,4 +1,6 @@
 import random
+
+from datetime import datetime
 from src.plugins.jianghu.user_info import UserInfo
 from src.plugins.jianghu.skill import Skill
 from src.utils.db import db
@@ -192,8 +194,17 @@ class PK(Skill):
     async def 战斗结算(self, action, 攻方: UserInfo, 守方: UserInfo):
         攻方_id = 攻方.基础属性["_id"]
         守方_id = 守方.基础属性["_id"]
-        攻方.最终结算()
-        守方.最终结算()
+        日期 = datetime.now().strftime("%Y%m%d")
+        data = {
+            "日期": 日期,
+            "攻方": 攻方_id,
+            "守方": 守方_id,
+            "记录": self.战斗内容
+        }
+        self.编号 = db.insert_auto_increment("pk_log", data=data, id_name="编号")
+        永久编号 = f"{日期}-{self.编号}"
+        攻方.最终结算(永久编号, 守方_id)
+        守方.最终结算(永久编号, 攻方_id)
         if 攻方.本场战斗重伤:
             胜方 = "守"
         elif 守方.本场战斗重伤:
@@ -351,7 +362,7 @@ class PK(Skill):
                     break
         self.战斗记录("------------------ 战斗结束 -----------------")
         data = await self.战斗结算(action, 攻方, 守方)
-        data["战斗编号"] = self.战斗编号
+        data["战斗编号"] = self.编号
         return data
 
 

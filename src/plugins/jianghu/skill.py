@@ -24,10 +24,7 @@ data_dir = os.path.realpath(__file__ + "/../../../../data/战斗记录/")
 class Skill():
 
     def __init__(self) -> None:
-        self.战斗记录目录 = os.path.join(data_dir, datetime.now().strftime("%Y%m%d"))
-        if not os.path.isdir(self.战斗记录目录):
-            os.makedirs(self.战斗记录目录)
-        self.战斗编号 = str(len(os.listdir(self.战斗记录目录)))
+        self.战斗内容 = []
         self.skill = {
             "三清剑法": {
                 "type": "主动招式",
@@ -100,15 +97,11 @@ class Skill():
         }
 
     def 战斗记录(self, 战斗记录):
-        战斗记录文件 = os.path.join(self.战斗记录目录, self.战斗编号)
-        with open(战斗记录文件, "a", encoding="utf-8") as f:
-            f.write(战斗记录 + "\n")
+        self.战斗内容.append(战斗记录)
 
     def 触发被动(self, 武学: list, 事件: str, 数值: int, 自己: UserInfo, 目标: UserInfo):
         if not any(武学):
             return 数值, ""
-        # 招式 = choice([i for i in 武学 if i])
-        # 招式 = self.skill.get(招式, {})
         for i in 武学:
             招式 = self.skill.get(i, {})
             if 招式.get("type") == "被动招式" and 招式.get("触发") == 事件:

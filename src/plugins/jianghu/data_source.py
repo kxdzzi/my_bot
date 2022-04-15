@@ -53,6 +53,10 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
     user_stat["当前内力"] = jianghu_data.当前内力
     base_attribute = jianghu_data.基础属性
     pagename = "my_info.html"
+    if base_attribute.get("击杀人", 0) >= 10000:
+        base_attribute["击杀人"] = db.jianghu.find_one({"_id": base_attribute["击杀人"]})["名称"]
+    else:
+        base_attribute["击杀人"] = "未知目标"
     img = await browser.template_to_image(user_name=user_name,
                                           user_id=user_id,
                                           pagename=pagename,
@@ -927,19 +931,12 @@ async def impart_skill(user_id, at_qq, 武学):
     return f"花费{需要花费银两}两银子，成功传授武学：{武学}"
 
 
-async def pk_log(战斗编号):
-    sk = Skill()
-    战斗记录文件 = os.path.join(sk.战斗记录目录, 战斗编号)
-    if not os.path.isfile(战斗记录文件):
-        return "战斗记录不存在，只能查看当天的战斗记录"
-    战斗记录 = []
-    with open(战斗记录文件, "r", encoding="utf-8") as f:
-        line = f.readline()
-        while line:
-            战斗记录.append(line)
-            line = f.readline()
+async def pk_log(日期, 编号):
+    战斗记录 = db.pk_log.find_one({"编号": 编号, "日期": 日期})
+    if not 战斗记录:
+        return "没有找到对应的战斗记录"
     data = {
-        "战斗记录": 战斗记录
+        "战斗记录": 战斗记录.get("记录")
     }
     pagename = "pk_log.html"
     img = await browser.template_to_image(pagename=pagename, **data)

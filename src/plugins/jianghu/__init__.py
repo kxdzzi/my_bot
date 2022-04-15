@@ -1,3 +1,4 @@
+from datetime import datetime
 from nonebot import export, on_regex
 from nonebot.params import Depends
 import re
@@ -62,7 +63,7 @@ pk = on_regex(r"^(切磋|偷袭|死斗) *\[CQ:at,qq=\d+\] *$",
               permission=GROUP,
               priority=5,
               block=True)
-pk_log = on_regex(r"^战斗记录 *\d+$", permission=GROUP, priority=5, block=True)
+pk_log = on_regex(r"^战斗记录 *\d+(.\d+){0,1}$", permission=GROUP, priority=5, block=True)
 
 compose = on_regex(r"^合成(材料|图纸).*?$", permission=GROUP, priority=5, block=True)
 
@@ -556,10 +557,14 @@ async def _(event: GroupMessageEvent):
     re_obj = re.compile(r"(\d+)")
     text = event.get_plaintext()
     d_list = re_obj.findall(text)
-    if not d_list:
+    if len(d_list) == 2:
+        日期, 编号 = d_list
+    elif len(d_list) == 1:
+        日期 = datetime.now().strftime("%Y%m%d")
+        编号 = d_list[0]
+    else:
         await pk_log.finish("输入格式错误")
-    战斗编号 = d_list[0]
-    msg = await source.pk_log(战斗编号)
+    msg = await source.pk_log(日期, int(编号))
     await pk_log.finish(msg)
 
 

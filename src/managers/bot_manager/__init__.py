@@ -59,3 +59,10 @@ async def _():
         await remove_group_conf()
         await archive_river_lantern()
         await pull_off_shelves()
+
+
+@scheduler.scheduled_job("cron", hour=0, minute=0)
+async def _():
+    '''0点重置'''
+    # 重置战斗记录编号
+    db.counters.update_one({"_id": "pk_log"}, {"$set": {"sequence_value": 0}})
