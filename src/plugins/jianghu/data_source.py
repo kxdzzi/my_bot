@@ -959,19 +959,20 @@ async def pk(动作, user_id, 目标):
         return "不可以打自己"
     消耗精力 = 0
     msg = ""
+    if 动作 == "偷袭":
+        消耗精力 = 1
+    elif 动作 == "死斗":
+        消耗精力 = 3
     if 跨群:
         if 动作 == "切磋":
             return "不能通过名称进行切磋"
-        elif 动作 == "偷袭":
-            消耗精力 = 2
-        elif 动作 == "死斗":
-            消耗精力 = 5
+        消耗精力 *= 2
     if 消耗精力:
         精力 = db.user_info.find_one({"_id": user_id}).get("energy", 0)
         if 精力 < 消耗精力:
             精力 = 0
-            return f"精力不足, 你只有{精力}精力, 通过名称{动作}需要{消耗精力}精力"
-        msg = f"通过名称{动作}, 精力-{消耗精力}"
+            return f"精力不足, 你只有{精力}精力, {动作}需要{消耗精力}精力"
+        msg = f"{动作}成功, 精力-{消耗精力}"
     db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -消耗精力}})
     战斗 = PK()
     data = await 战斗.main(动作, user_id, 目标_id, msg)
