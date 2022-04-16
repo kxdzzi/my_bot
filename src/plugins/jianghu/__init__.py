@@ -20,7 +20,7 @@ Export.plugin_usage = "江湖能容天下事，何须唯唯屈庙堂？"
 Export.default_status = True
 
 my_info = on_regex(r"^个人信息$", permission=GROUP, priority=5, block=True)
-set_name = on_regex(r"^改名 .{0,8}$", permission=GROUP, priority=5, block=True)
+set_name = on_regex(r"^改名 [\u4e00-\u9fa5]{1,8}$", permission=GROUP, priority=5, block=True)
 jianghu = on_regex(r"^江湖$", permission=GROUP, priority=5, block=True)
 dig_for_treasure = on_regex(r"^挖宝$", permission=GROUP, priority=5, block=True)
 give_gold = on_regex(r"^赠送银两 *\[CQ:at,qq=\d+\] *\d+$",
@@ -59,7 +59,7 @@ impart_skill = on_regex(r"^传授武学 *\[CQ:at,qq=\d+\] *(.+?)$",
                         priority=5,
                         block=True)
 
-pk = on_regex(r"^(切磋|偷袭|死斗) *\[CQ:at,qq=\d+\] *$",
+pk = on_regex(r"^(切磋|偷袭|死斗) *(\[CQ:at,qq=\d+\]|[\u4e00-\u9fa5]{1,8}) *$",
               permission=GROUP,
               priority=5,
               block=True)
@@ -268,7 +268,7 @@ async def _(event: GroupMessageEvent):
         await give_gold.finish(msg)
     at_qq = int(at_member_list[0])
     if at_qq == user_id:
-        msg = f"不能给自己送银两！"
+        msg = "不能给自己送银两！"
         await give_gold.finish(msg)
 
     msg = await source.give_gold(user_id, user_name, at_qq, gold)
@@ -594,19 +594,14 @@ async def _(event: GroupMessageEvent):
 async def _(event: GroupMessageEvent):
     '''干架'''
     user_id = event.user_id
-    user_name = event.sender.nickname
-    at_member_obj = re.compile(r"^(切磋|偷袭|死斗) *\[CQ:at,qq=(\d*)\] *$")
+    at_member_obj = re.compile(r"^(切磋|偷袭|死斗) *(\[CQ:at,qq=\d+\]|[\u4e00-\u9fa5]{1,8}) *$")
     at_member_list = at_member_obj.findall(event.raw_message)
     if not at_member_list:
-        msg = "需要艾特你要干的人"
+        msg = "需要艾特你要干的人, 或是输入正确的名字"
         await pk.finish(msg)
     动作 = at_member_list[0][0]
-    at_qq = int(at_member_list[0][1])
-    if at_qq == user_id:
-        msg = f"大家快来看啊，{user_name}要打自己了!"
-        await pk.finish(msg)
-
-    msg = await source.pk(动作, user_id, at_qq)
+    目标 = at_member_list[0][1]
+    msg = await source.pk(动作, user_id, 目标)
     await pk.finish(msg)
 
 
