@@ -106,8 +106,8 @@ class Skill():
             招式 = self.skill.get(i, {})
             if 招式.get("type") == "被动招式" and 招式.get("触发") == 事件:
                 数值, 重伤状态 = 招式["招式"](自己, 目标, 数值)
-            if 重伤状态:
-                break
+                if 重伤状态:
+                    break
         return 数值, False
 
     def 计算内力(self,
