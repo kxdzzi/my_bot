@@ -7,6 +7,7 @@ from src.utils.db import db
 import re
 from src.utils.log import logger
 
+
 class PK(Skill):
 
     async def compute_buff(self, a: UserInfo):
@@ -26,7 +27,7 @@ class PK(Skill):
         自己.debuff = [debuff for debuff in 自己.debuff if debuff["剩余回合"] > 0]
 
     async def 发动攻击(self, 攻: UserInfo, 守: UserInfo, 当前回合: int):
-        攻方主动技能槽位 = [i for i in 攻.基础属性["武学"][:3] if i]
+        攻方主动技能槽位 = [i for i in 攻.基础属性["武学"] if i and self.skill[i]["type"] == "主动招式"]
         self.战斗记录(f"【{攻.名称}】行动")
         攻方限制状态 = [debuff["type"] for debuff in 攻.debuff]
         if "定身" in 攻方限制状态:
@@ -34,19 +35,15 @@ class PK(Skill):
             return
         if 攻方主动技能槽位:
             攻方主动技能 = random.choice(攻方主动技能槽位)
-            if 当前回合 == 0:
-                攻方主动技能 = 攻方主动技能槽位[0]
-            if self.skill[攻方主动技能]["type"] == "主动招式":
-                if self.skill[攻方主动技能]["招式类型"] == "外功招式" and "缴械" in 攻方限制状态:
-                    self.战斗记录(f"{攻.名称} 被【缴械】，{攻方主动技能}无法施放")
-                    return
-                elif self.skill[攻方主动技能]["招式类型"] == "内功招式" and "封内" in 攻方限制状态:
-                    self.战斗记录(f"{攻.名称} 被【封内】，{攻方主动技能}无法施放")
-                    return
-                重伤信息 = self.skill[攻方主动技能]["招式"](攻, 守)
-            else:
-                重伤信息, _ = self.造成伤害("普通攻击", 攻, 守, *攻.普通攻击())
-
+            if 当前回合 < 5 and 当前回合 < len(攻方主动技能槽位):
+                攻方主动技能 = 攻方主动技能槽位[当前回合]
+            if self.skill[攻方主动技能]["招式类型"] == "外功招式" and "缴械" in 攻方限制状态:
+                self.战斗记录(f"{攻.名称} 被【缴械】，{攻方主动技能}无法施放")
+                return
+            elif self.skill[攻方主动技能]["招式类型"] == "内功招式" and "封内" in 攻方限制状态:
+                self.战斗记录(f"{攻.名称} 被【封内】，{攻方主动技能}无法施放")
+                return
+            重伤信息 = self.skill[攻方主动技能]["招式"](攻, 守)
         else:
             重伤信息, _ = self.造成伤害("普通攻击", 攻, 守, *攻.普通攻击())
         return 重伤信息
