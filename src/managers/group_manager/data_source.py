@@ -184,15 +184,16 @@ async def check_add_bot_to_group(bot: Bot, user_id: int, group_id: int) -> tuple
         filter={"_id": group_id},
         update={"$inc": {"add_group_num": 1}},
         upsert=True)
-    add_group_num = group_conf.get("add_group_num", 0)
-    if add_group_num >= 4:
-        user_black.update_one({
-            "_id": user_id},
-            {
-                "$set": {"block_time": datetime.today() + timedelta(days=30)},
-                "$inc": {"black_num": 1}
-            }, True)
-        return False, "单日拉机器人超过5次, 用户拉黑30天"
+    if group_conf:
+        add_group_num = group_conf.get("add_group_num", 0)
+        if add_group_num >= 4:
+            user_black.update_one({
+                "_id": user_id},
+                {
+                    "$set": {"block_time": datetime.today() + timedelta(days=30)},
+                    "$inc": {"black_num": 1}
+                }, True)
+            return False, "单日拉机器人超过5次, 用户拉黑30天"
     manage_group = config.bot_conf.get("manage_group", [])
     out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
     bot_id = int(bot.self_id)
