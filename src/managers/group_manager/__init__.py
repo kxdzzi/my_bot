@@ -131,11 +131,13 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
     bot_id = int(bot.self_id)
     user_id = event.user_id
     nickname = event.sender.nickname
+    role = event.sender.role
     message = event.raw_message
     sent_time = datetime.datetime.now()
     chat_log = archive[sent_time.strftime("chat-log-%Y-%m-%d")]
     chat_log.insert_one({
         "bot_id": bot_id,
+        "role": role,
         "group_id": group_id,
         "group_name": group_name,
         "user_id": user_id,
