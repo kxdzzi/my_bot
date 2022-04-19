@@ -133,7 +133,7 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
     nickname = event.sender.nickname
     message = event.raw_message
     sent_time = datetime.datetime.now()
-    chat_log = archive[sent_time.strftime("chat-log-%Y-%m")]
+    chat_log = archive[sent_time.strftime("chat-log-%Y-%m-%d")]
     chat_log.insert_one({
         "bot_id": bot_id,
         "group_id": group_id,
@@ -290,16 +290,9 @@ async def _(bot: Bot, event: GroupRequestEvent):
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     group_id = event.group_id
-    is_user_black = db.client["management"].user_black_list.find_one({
-        '_id': user_id,
-        "block_time": {"$gte": datetime.datetime.now()}
-    })
-    is_group_black = db.client["management"].group_black_list.find_one({
-        '_id': group_id,
-        "block_time": {"$gte": datetime.datetime.now()}
-    })
-    approve, reason = await source.check_add_bot_to_group(bot, group_id)
-    approve = approve and (not is_user_black) and (not is_group_black)
+
+    approve, reason = await source.check_add_bot_to_group(
+        bot, user_id, group_id)
 
     if not approve:
         logger.info(

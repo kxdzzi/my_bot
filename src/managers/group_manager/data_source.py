@@ -1,7 +1,7 @@
 import os
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Literal, Optional
 
 from httpx import AsyncClient
@@ -165,25 +165,45 @@ async def handle_data_notice(group_id: int, notice_type: Literal["离群通知",
     return True
 
 
-async def check_add_bot_to_group(bot: Bot, group_id: int) -> tuple:
+async def check_add_bot_to_group(bot: Bot, user_id: int, group_id: int) -> tuple:
     '''检查加群条件'''
-
+    management_db = db.client["management"]
+    user_black = management_db.user_black_list
+    group_black = management_db.group_black_list
+    if user_black.find_one({
+        '_id': user_id,
+        "block_time": {"$gte": datetime.now()}
+    }):
+        return False, f"{user_id}太烦人被我拉黑了, 下次注意点!"
+    if group_black.find_one({
+        '_id': group_id,
+        "block_time": {"$gte": datetime.now()}
+    }):
+        return False, "群已被拉黑"
+    group_conf = db.group_conf.find_one_and_update(
+        filter={"_id": group_id},
+        update={"$inc": {"add_group_num": 1}},
+        upsert=True)
+    add_group_num = group_conf.get("add_group_num", 0)
+    if add_group_num >= 4:
+        user_black.update_one({
+            "_id": user_id},
+            {
+                "$set": {"block_time": datetime.today() + timedelta(days=30)},
+                "$inc": {"black_num": 1}
+            }, True)
+        return False, "单日拉机器人超过5次, 用户拉黑30天"
     manage_group = config.bot_conf.get("manage_group", [])
     out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
     bot_id = int(bot.self_id)
     access_group_num = db.bot_info.find_one({'_id': bot_id}).get("access_group_num", 50)
     bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
-    group_list = await bot.get_group_list()
     # 若群id不在管理群列表, 则需要进行加群条件过滤
     if group_id not in manage_group:
         if bot_id in out_of_work_bot:
             return False, "老子放假了，你拉别的二猫子去！"
         elif bot_group_num >= access_group_num:
             return False, f"老子最多只能加{access_group_num}个群，现在都加了{bot_group_num}，机器人不用休息的吗？你赶紧拉别的二猫子去，别拉我了！"
-        else:
-            _con = db.group_conf.find_one({'_id': group_id})
-            if _con and _con.get("bot_id") != 0 != int(bot_id):
-                return False, f"群内已有二猫子（{_con.get('bot_id')}），一群不容二二猫，再见！"
     return True, None
 
 
