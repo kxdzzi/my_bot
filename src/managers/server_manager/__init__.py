@@ -41,7 +41,7 @@ async def _(bot: Bot):
     '''bot链接关闭'''
     bot_id = int(bot.self_id)
     logger.info(f"<y>检测到bot({bot_id})离线，发送通知邮件……</y>")
-    # await mail_client.bot_offline(bot_id)
+    await mail_client.bot_offline(bot_id)
 
 
 @driver.on_startup
