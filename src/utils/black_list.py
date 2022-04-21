@@ -4,7 +4,7 @@ from datetime import datetime
 from src.utils.db import db
 
 
-def add_black_list(_id, black_type, black_time, remarks=""):
+def add_black_list(_id, black_type, black_time, remark=""):
     """
     加黑
     """
@@ -17,7 +17,7 @@ def add_black_list(_id, black_type, black_time, remarks=""):
     black.update_one({"_id": _id}, {
         "$set": {
             "block_time": today_time_int + black_time * 1000,
-            "remarks": remarks
+            "remark": remark
         },
         "$inc": {
             "black_num": 1
