@@ -170,14 +170,15 @@ async def check_add_bot_to_group(bot: Bot, user_id: int, group_id: int) -> tuple
     management_db = db.client["management"]
     user_black = management_db.user_black_list
     group_black = management_db.group_black_list
+    today_time_int = int(time.mktime(datetime.now().timetuple())) * 1000
     if user_black.find_one({
         '_id': user_id,
-        "block_time": {"$gte": datetime.now()}
+        "block_time": {"$gt": today_time_int}
     }):
         return False, f"{user_id}太烦人被我拉黑了, 下次注意点!"
     if group_black.find_one({
         '_id': group_id,
-        "block_time": {"$gte": datetime.now()}
+        "block_time": {"$gte": today_time_int}
     }):
         return False, "群已被拉黑"
     group_conf = db.group_conf.find_one_and_update(
@@ -190,7 +191,7 @@ async def check_add_bot_to_group(bot: Bot, user_id: int, group_id: int) -> tuple
             user_black.update_one({
                 "_id": user_id},
                 {
-                    "$set": {"block_time": datetime.today() + timedelta(days=30)},
+                    "$set": {"block_time": today_time_int + 2592000000},
                     "$inc": {"black_num": 1}
                 }, True)
             return False, "单日拉机器人超过5次, 用户拉黑30天"
