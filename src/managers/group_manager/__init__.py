@@ -1,27 +1,26 @@
 import asyncio
-import time
 import datetime
-import random
 import os
-
+import random
+import time
 from typing import Literal
 
-from nonebot.message import event_postprocessor
-
-from nonebot import get_bots, on_regex, on_notice, on_request
-from nonebot.rule import Rule
-from nonebot.adapters.onebot.v11 import Bot, Message, MessageSegment, Event
+from nonebot import get_bots, on_notice, on_regex, on_request
+from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageSegment
 from nonebot.adapters.onebot.v11.event import (
-    FriendRequestEvent, PrivateMessageEvent, GroupDecreaseNoticeEvent,
-    GroupRequestEvent, GroupIncreaseNoticeEvent, GroupMessageEvent)
+    FriendRequestEvent, GroupDecreaseNoticeEvent, GroupIncreaseNoticeEvent,
+    GroupMessageEvent, GroupRequestEvent, PrivateMessageEvent)
 from nonebot.adapters.onebot.v11.permission import (GROUP, GROUP_ADMIN,
                                                     GROUP_OWNER)
+from nonebot.message import event_postprocessor
 from nonebot.params import Depends
 from nonebot.permission import SUPERUSER
+from nonebot.rule import Rule
+from src.utils.black_list import check_black_list
 from src.utils.browser import browser
 from src.utils.config import config
-from src.utils.log import logger
 from src.utils.db import db
+from src.utils.log import logger
 from src.utils.scheduler import scheduler
 from src.utils.utils import GroupList_Async
 
@@ -272,15 +271,13 @@ async def _(bot: Bot, msg: Message = Depends(get_didi_msg)):
 @friend_request.handle()
 async def _(bot: Bot, event: FriendRequestEvent):
     """加好友事件"""
-    out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
+    out_of_work_bot = [
+        bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})
+    ]
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
-    today_time_int = int(time.mktime(datetime.datetime.now().timetuple())) * 1000
-    is_black = db.client["management"].user_black_list.find_one({
-        '_id': user_id,
-        "block_time": {"$gt": today_time_int}
-    })
+    is_black, _ = check_black_list(user_id, "QQ")
     approve = (bot_id not in out_of_work_bot) and (not is_black)
     await bot.set_friend_add_request(
         flag=event.flag,

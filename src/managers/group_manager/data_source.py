@@ -1,7 +1,7 @@
 import os
 import random
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Literal, Optional
 
 from httpx import AsyncClient
@@ -9,6 +9,7 @@ from nonebot.adapters.onebot.v11 import Bot, Message, MessageSegment
 from nonebot.adapters.onebot.v11.event import (GroupIncreaseNoticeEvent,
                                                GroupMessageEvent)
 from nonebot.plugin import get_loaded_plugins
+from src.utils.black_list import add_black_list, check_black_list
 from src.utils.chat import chat
 from src.utils.config import config
 from src.utils.content_check import content_check
@@ -165,40 +166,34 @@ async def handle_data_notice(group_id: int, notice_type: Literal["离群通知",
     return True
 
 
-async def check_add_bot_to_group(bot: Bot, user_id: int, group_id: int) -> tuple:
+async def check_add_bot_to_group(bot: Bot, user_id: int,
+                                 group_id: int) -> tuple:
     '''检查加群条件'''
-    management_db = db.client["management"]
-    user_black = management_db.user_black_list
-    group_black = management_db.group_black_list
-    today_time_int = int(time.mktime(datetime.now().timetuple())) * 1000
-    if user_black.find_one({
-        '_id': user_id,
-        "block_time": {"$gt": today_time_int}
-    }):
+    result, _ = check_black_list(user_id, "QQ")
+    if result:
         return False, f"{user_id}太烦人被我拉黑了, 下次注意点!"
-    if group_black.find_one({
-        '_id': group_id,
-        "block_time": {"$gt": today_time_int}
-    }):
+    result, _ = check_black_list(group_id, "群号")
+    if result:
         return False, "群已被拉黑"
     group_conf = db.group_conf.find_one_and_update(
         filter={"_id": group_id},
-        update={"$inc": {"add_group_num": 1}},
+        update={"$inc": {
+            "add_group_num": 1
+        }},
         upsert=True)
     if group_conf:
         add_group_num = group_conf.get("add_group_num", 0)
         if add_group_num >= 4:
-            user_black.update_one({
-                "_id": user_id},
-                {
-                    "$set": {"block_time": today_time_int + 2592000000},
-                    "$inc": {"black_num": 1}
-                }, True)
+            add_black_list(user_id, "QQ", 2592000, f"加群{group_id}单日超过5次")
             return False, "单日拉机器人超过5次, 用户拉黑30天"
     manage_group = config.bot_conf.get("manage_group", [])
-    out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
+    out_of_work_bot = [
+        bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})
+    ]
     bot_id = int(bot.self_id)
-    access_group_num = db.bot_info.find_one({'_id': bot_id}).get("access_group_num", 50)
+    access_group_num = db.bot_info.find_one({
+        '_id': bot_id
+    }).get("access_group_num", 50)
     bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
     # 若群id不在管理群列表, 则需要进行加群条件过滤
     if group_id not in manage_group:
