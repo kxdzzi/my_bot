@@ -1,4 +1,5 @@
-import datetime
+import time
+from datetime import datetime
 
 from nonebot import on_regex
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
@@ -18,14 +19,16 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
     # 检测插件是否注册
     group_id = event.group_id
     user_id = event.user_id
+    today_time_int = int(time.mktime(datetime.now().timetuple())) * 1000
+
     module_name = matcher.plugin_name
     is_user_black = db.client["management"].user_black_list.find_one({
         '_id': user_id,
-        "block_time": {"$gte": datetime.datetime.now()}
+        "block_time": {"$gt": today_time_int}
     })
     is_group_black = db.client["management"].group_black_list.find_one({
         '_id': group_id,
-        "block_time": {"$gte": datetime.datetime.now()}
+        "block_time": {"$gt": today_time_int}
     })
     status = await source.get_plugin_status(group_id, module_name)
     if status is None:

@@ -178,7 +178,7 @@ async def check_add_bot_to_group(bot: Bot, user_id: int, group_id: int) -> tuple
         return False, f"{user_id}太烦人被我拉黑了, 下次注意点!"
     if group_black.find_one({
         '_id': group_id,
-        "block_time": {"$gte": today_time_int}
+        "block_time": {"$gt": today_time_int}
     }):
         return False, "群已被拉黑"
     group_conf = db.group_conf.find_one_and_update(

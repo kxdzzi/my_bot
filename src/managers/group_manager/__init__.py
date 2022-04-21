@@ -1,4 +1,5 @@
 import asyncio
+import time
 import datetime
 import random
 import os
@@ -275,9 +276,10 @@ async def _(bot: Bot, event: FriendRequestEvent):
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
+    today_time_int = int(time.mktime(datetime.datetime.now().timetuple())) * 1000
     is_black = db.client["management"].user_black_list.find_one({
         '_id': user_id,
-        "block_time": {"$gte": datetime.datetime.now()}
+        "block_time": {"$gt": today_time_int}
     })
     approve = (bot_id not in out_of_work_bot) and (not is_black)
     await bot.set_friend_add_request(
