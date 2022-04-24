@@ -305,7 +305,7 @@ async def _(event: GroupMessageEvent):
                 f"{bot_id: 11d} | {bot_group_num}/{access_group_num}"
             )
     if available_bot_list:
-        msg = "  二猫子QQ   | 群数量"
+        msg = "  二猫子QQ   | 群数量\n"
         msg += "\n".join(available_bot_list) 
     else:
         msg = "暂无可用的二猫子"
