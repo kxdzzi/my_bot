@@ -293,7 +293,7 @@ async def _(event: GroupMessageEvent,
 async def _(event: GroupMessageEvent):
     '''查看二猫子列表'''
     bot_info_list = db.bot_info.find({"work_stat": True})
-    bot_list = []
+    available_bot_list = []
     for bot_info in bot_info_list:
         bot_id = int(bot_info.get("_id"))
         db_bot_info = db.bot_info.find_one({'_id': bot_id})
@@ -301,12 +301,12 @@ async def _(event: GroupMessageEvent):
         bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
         on_line = db_bot_info.get("online_status", False)
         if on_line and (bot_group_num < access_group_num):
-            bot_list.append(
+            available_bot_list.append(
                 f"{bot_id: 11d} | {bot_group_num}/{access_group_num}"
             )
-    if bot_list:
+    if available_bot_list:
         msg = "  二猫子QQ   | 群数量"
-        msg += "\n".join(bot_list) 
+        msg += "\n".join(available_bot_list) 
     else:
         msg = "暂无可用的二猫子"
     await bot_list.finish(msg)
