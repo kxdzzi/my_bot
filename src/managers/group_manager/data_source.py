@@ -183,7 +183,7 @@ async def check_add_bot_to_group(bot: Bot, user_id: int,
         upsert=True)
     if group_conf:
         add_group_num = group_conf.get("add_group_num", 0)
-        if add_group_num >= 4:
+        if add_group_num >= 5:
             add_black_list(user_id, "QQ", 2592000, f"加群{group_id}单日超过5次")
             return False, "单日拉机器人超过5次, 用户拉黑30天"
     manage_group = config.bot_conf.get("manage_group", [])
@@ -210,7 +210,7 @@ async def add_bot_to_group(group_id: int, bot_id: int) -> None:
         {'_id': group_id},
         {'$set': {
             "group_switch": True,
-            "robot_active": 50,
+            "robot_active": 0,
             "bot_id": bot_id
         }}, True)
     # 注册所有插件

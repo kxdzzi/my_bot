@@ -66,16 +66,6 @@ instructions_for_use = on_regex(pattern=r"^使用说明$",
                                 priority=3,
                                 block=True)  # 菜单
 
-admin_help = on_regex(pattern=r"^管理员帮助$",
-                      permission=GROUP,
-                      priority=3,
-                      block=True)  # 管理员帮助
-
-didi = on_regex(pattern=r"^滴滴 ",
-                permission=GROUP_ADMIN | GROUP_OWNER,
-                priority=3,
-                block=True)  # 滴滴
-
 exit_group = on_regex(pattern=r"^(退群 \d+)$",
                       permission=SUPERUSER,
                       priority=1,
@@ -249,25 +239,6 @@ async def _():
     await instructions_for_use.finish(msg)
 
 
-@admin_help.handle()
-async def _():
-    '''管理员帮助'''
-    pagename = "admin_help.html"
-    img = await browser.template_to_image(pagename=pagename)
-    await admin_help.finish(MessageSegment.image(img))
-
-
-@didi.handle()
-async def _(bot: Bot, msg: Message = Depends(get_didi_msg)):
-    '''滴滴功能'''
-    superusers = list(bot.config.superusers)
-    if not superusers:
-        await didi.finish("本机器人没有管理员，不知道发给谁呀。")
-    for user in superusers:
-        await bot.send_private_msg(user_id=int(user), message=msg)
-    await didi.finish()
-
-
 @friend_request.handle()
 async def _(bot: Bot, event: FriendRequestEvent):
     """加好友事件"""
@@ -321,17 +292,23 @@ async def _(event: GroupMessageEvent,
 @bot_list.handle()
 async def _(event: GroupMessageEvent):
     '''查看二猫子列表'''
-    if not db.bot_info.count_documents({"work_stat": True}):
-        await bot_list.finish("暂无可用的二猫子")
     bot_info_list = db.bot_info.find({"work_stat": True})
-    msg = "  二猫子QQ   | 群数量"
+    bot_list = []
     for bot_info in bot_info_list:
         bot_id = int(bot_info.get("_id"))
         db_bot_info = db.bot_info.find_one({'_id': bot_id})
         access_group_num = db_bot_info.get("access_group_num", 50)
         bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
-        on_line = "" if db_bot_info.get("online_status", False) else " ! "
-        msg += f"\n{on_line}{bot_id: 11d} | {bot_group_num}/{access_group_num}"
+        on_line = db_bot_info.get("online_status", False)
+        if on_line and (bot_group_num < access_group_num):
+            bot_list.append(
+                f"{bot_id: 11d} | {bot_group_num}/{access_group_num}"
+            )
+    if bot_list:
+        msg = "  二猫子QQ   | 群数量"
+        msg += "\n".join(bot_list) 
+    else:
+        msg = "暂无可用的二猫子"
     await bot_list.finish(msg)
 
 
@@ -354,7 +331,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
             group_member_list = await bot.get_group_member_list(
                 group_id=group_id)
             for usr in group_member_list:
-                group_user_id = usr["user_id"]
+                group_user_id = int(usr["user_id"])
                 if group_user_id in bot_id_list and group_user_id != self_id:
                     msg = "一群不容二二猫！！你说"
                     msg += MessageSegment.at(group_user_id)

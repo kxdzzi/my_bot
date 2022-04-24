@@ -34,7 +34,7 @@ xz_xia = on_regex(r"^.{0,5}(虾|🦞|🦐)+.{0,5}$",
 
 ermaozi = on_message(rule=to_me(),
                      permission=GROUP,
-                     priority=5,
+                     priority=10,
                      block=True)
 
 
