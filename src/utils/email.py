@@ -79,11 +79,11 @@ class MailClient(object):
                                {"$set": {
                                    "online_status": False
                                }}, True)
-        bot_name = db.bot_info.find_one({"_id": robot_id})["bot_name"]
-        mail_title = f"机器人[{bot_name}]({robot_id})掉线"
-        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        mail_content = f"你的机器人：[{bot_name}]({robot_id}) 在 {time_now} 掉线了！"
-        await self.send_mail(self._receiver, mail_title, mail_content)
+        # bot_name = db.bot_info.find_one({"_id": robot_id})["bot_name"]
+        # mail_title = f"机器人[{bot_name}]({robot_id})掉线"
+        # time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        # mail_content = f"你的机器人：[{bot_name}]({robot_id}) 在 {time_now} 掉线了！"
+        # await self.send_mail(self._receiver, mail_title, mail_content)
 
     async def bot_online(self, robot_id: int):
         bot_name = db.bot_info.find_one({"_id": robot_id})["bot_name"]

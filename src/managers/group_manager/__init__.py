@@ -1,26 +1,26 @@
 import asyncio
 import datetime
-import random
 import os
-
+import random
+import time
 from typing import Literal
 
-from nonebot.message import event_postprocessor
-
-from nonebot import get_bots, on_regex, on_notice, on_request
-from nonebot.rule import Rule
-from nonebot.adapters.onebot.v11 import Bot, Message, MessageSegment, Event
+from nonebot import get_bots, on_notice, on_regex, on_request
+from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageSegment
 from nonebot.adapters.onebot.v11.event import (
-    FriendRequestEvent, PrivateMessageEvent, GroupDecreaseNoticeEvent,
-    GroupRequestEvent, GroupIncreaseNoticeEvent, GroupMessageEvent)
+    FriendRequestEvent, GroupDecreaseNoticeEvent, GroupIncreaseNoticeEvent,
+    GroupMessageEvent, GroupRequestEvent, PrivateMessageEvent)
 from nonebot.adapters.onebot.v11.permission import (GROUP, GROUP_ADMIN,
                                                     GROUP_OWNER)
+from nonebot.message import event_postprocessor
 from nonebot.params import Depends
 from nonebot.permission import SUPERUSER
+from nonebot.rule import Rule
+from src.utils.black_list import check_black_list
 from src.utils.browser import browser
 from src.utils.config import config
-from src.utils.log import logger
 from src.utils.db import db
+from src.utils.log import logger
 from src.utils.scheduler import scheduler
 from src.utils.utils import GroupList_Async
 
@@ -65,16 +65,6 @@ instructions_for_use = on_regex(pattern=r"^使用说明$",
                                 permission=GROUP,
                                 priority=3,
                                 block=True)  # 菜单
-
-admin_help = on_regex(pattern=r"^管理员帮助$",
-                      permission=GROUP,
-                      priority=3,
-                      block=True)  # 管理员帮助
-
-didi = on_regex(pattern=r"^滴滴 ",
-                permission=GROUP_ADMIN | GROUP_OWNER,
-                priority=3,
-                block=True)  # 滴滴
 
 exit_group = on_regex(pattern=r"^(退群 \d+)$",
                       permission=SUPERUSER,
@@ -131,11 +121,13 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
     bot_id = int(bot.self_id)
     user_id = event.user_id
     nickname = event.sender.nickname
+    role = event.sender.role
     message = event.raw_message
     sent_time = datetime.datetime.now()
-    chat_log = archive[sent_time.strftime("chat-log-%Y-%m")]
+    chat_log = archive[sent_time.strftime("chat-log-%Y-%m-%d")]
     chat_log.insert_one({
         "bot_id": bot_id,
+        "role": role,
         "group_id": group_id,
         "group_name": group_name,
         "user_id": user_id,
@@ -247,36 +239,16 @@ async def _():
     await instructions_for_use.finish(msg)
 
 
-@admin_help.handle()
-async def _():
-    '''管理员帮助'''
-    pagename = "admin_help.html"
-    img = await browser.template_to_image(pagename=pagename)
-    await admin_help.finish(MessageSegment.image(img))
-
-
-@didi.handle()
-async def _(bot: Bot, msg: Message = Depends(get_didi_msg)):
-    '''滴滴功能'''
-    superusers = list(bot.config.superusers)
-    if not superusers:
-        await didi.finish("本机器人没有管理员，不知道发给谁呀。")
-    for user in superusers:
-        await bot.send_private_msg(user_id=int(user), message=msg)
-    await didi.finish()
-
-
 @friend_request.handle()
 async def _(bot: Bot, event: FriendRequestEvent):
     """加好友事件"""
-    out_of_work_bot = [bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})]
+    out_of_work_bot = [
+        bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})
+    ]
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
-    is_black = db.client["management"].user_black_list.find_one({
-        '_id': user_id,
-        "block_time": {"$gte": datetime.datetime.now()}
-    })
+    is_black, _ = check_black_list(user_id, "QQ")
     approve = (bot_id not in out_of_work_bot) and (not is_black)
     await bot.set_friend_add_request(
         flag=event.flag,
@@ -290,16 +262,9 @@ async def _(bot: Bot, event: GroupRequestEvent):
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
     group_id = event.group_id
-    is_user_black = db.client["management"].user_black_list.find_one({
-        '_id': user_id,
-        "block_time": {"$gte": datetime.datetime.now()}
-    })
-    is_group_black = db.client["management"].group_black_list.find_one({
-        '_id': group_id,
-        "block_time": {"$gte": datetime.datetime.now()}
-    })
-    approve, reason = await source.check_add_bot_to_group(bot, group_id)
-    approve = approve and (not is_user_black) and (not is_group_black)
+
+    approve, reason = await source.check_add_bot_to_group(
+        bot, user_id, group_id)
 
     if not approve:
         logger.info(
@@ -327,17 +292,23 @@ async def _(event: GroupMessageEvent,
 @bot_list.handle()
 async def _(event: GroupMessageEvent):
     '''查看二猫子列表'''
-    if not db.bot_info.count_documents({"work_stat": True}):
-        await bot_list.finish("暂无可用的二猫子")
     bot_info_list = db.bot_info.find({"work_stat": True})
-    msg = "  二猫子QQ   | 群数量"
+    available_bot_list = []
     for bot_info in bot_info_list:
         bot_id = int(bot_info.get("_id"))
         db_bot_info = db.bot_info.find_one({'_id': bot_id})
         access_group_num = db_bot_info.get("access_group_num", 50)
         bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
-        on_line = "" if db_bot_info.get("online_status", False) else " ! "
-        msg += f"\n{on_line}{bot_id: 11d} | {bot_group_num}/{access_group_num}"
+        on_line = db_bot_info.get("online_status", False)
+        if on_line and (bot_group_num < access_group_num):
+            available_bot_list.append(
+                f"{bot_id: 11d} | {bot_group_num}/{access_group_num}"
+            )
+    if available_bot_list:
+        msg = "  二猫子QQ   | 群数量\n"
+        msg += "\n".join(available_bot_list) 
+    else:
+        msg = "暂无可用的二猫子"
     await bot_list.finish(msg)
 
 
@@ -360,7 +331,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
             group_member_list = await bot.get_group_member_list(
                 group_id=group_id)
             for usr in group_member_list:
-                group_user_id = usr["user_id"]
+                group_user_id = int(usr["user_id"])
                 if group_user_id in bot_id_list and group_user_id != self_id:
                     msg = "一群不容二二猫！！你说"
                     msg += MessageSegment.at(group_user_id)

@@ -79,7 +79,7 @@ async def reset_sign_nums():
                                "sign_num": 0,
                                "prize_pool": prize_pool
                            }}, True)
-    db.group_conf.update_many({}, {'$set': {"lucky": 0}}, True)
+    db.group_conf.update_many({}, {'$set': {"lucky": 0, "add_group_num": 0}}, True)
     db.user_info.update_many({},
                              {'$set': {
                                  "user_lucky": 1.0,

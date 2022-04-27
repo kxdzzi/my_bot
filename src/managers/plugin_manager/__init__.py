@@ -1,4 +1,5 @@
-import datetime
+import time
+from datetime import datetime
 
 from nonebot import on_regex
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
@@ -7,7 +8,7 @@ from nonebot.exception import IgnoredException
 from nonebot.matcher import Matcher
 from nonebot.message import run_preprocessor
 from nonebot.permission import SUPERUSER
-from src.utils.db import db
+from src.utils.black_list import check_black_list
 
 from . import data_source as source
 
@@ -19,14 +20,8 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
     group_id = event.group_id
     user_id = event.user_id
     module_name = matcher.plugin_name
-    is_user_black = db.client["management"].user_black_list.find_one({
-        '_id': user_id,
-        "block_time": {"$gte": datetime.datetime.now()}
-    })
-    is_group_black = db.client["management"].group_black_list.find_one({
-        '_id': group_id,
-        "block_time": {"$gte": datetime.datetime.now()}
-    })
+    is_user_black, _ = check_black_list(user_id, "QQ")
+    is_group_black, _ = check_black_list(group_id, "群号")
     status = await source.get_plugin_status(group_id, module_name)
     if status is None:
         # 跳过未注册的插件
@@ -38,9 +33,7 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
 
     # 检测机器人总开关
     bot_status = await source.get_bot_status(group_id)
-    if (not bot_status
-            or is_user_black
-            or is_group_black):
+    if (not bot_status or is_user_black or is_group_black):
         raise IgnoredException("机器人未开启")
 
 
