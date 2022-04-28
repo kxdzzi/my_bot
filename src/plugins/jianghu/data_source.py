@@ -138,7 +138,7 @@ async def give_gold(user_id, user_name, at_qq, gold):
     善恶值 = user_info.基础属性["善恶值"]
     手续费比例 = -善恶值 / 4000
     if 手续费比例 >= 1:
-        手续费比例 = 0.90
+        手续费比例 = 0.9
     if 手续费比例 < 0:
         手续费比例 = 0
     con = db.user_info.find_one({"_id": user_id})
