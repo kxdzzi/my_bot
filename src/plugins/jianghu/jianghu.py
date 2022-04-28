@@ -1,5 +1,6 @@
 import random
 
+from numpy import arctan
 from datetime import datetime
 from src.plugins.jianghu.user_info import UserInfo
 from src.plugins.jianghu.skill import Skill
@@ -65,11 +66,8 @@ class PK(Skill):
         胜方名称 = 胜方.基础属性['名称']
         败方名称 = 败方.基础属性['名称']
         总善恶 = 胜方.基础属性['善恶值'] + 败方.基础属性['善恶值']
-        抢夺系数 = -(总善恶 ** 0.35 - 10) / 100
-        if 抢夺系数 < 0.03:
-            抢夺系数 = 0.03
-        elif 抢夺系数 > 0.65:
-            抢夺系数 = 0.65
+        抢夺系数 = arctan(-总善恶 / 1000) * 10 + 16
+
         if con := db.user_info.find_one({"_id": 败方id}):
             gold = con.get("gold", 0)
         if gold > 10:

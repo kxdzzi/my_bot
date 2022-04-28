@@ -90,6 +90,8 @@ async def set_name(user_id, res):
     if db.jianghu.find_one({"名称": name}) or name == "无名":
         return "名称重复"
     usr = UserInfo(user_id)
+    if usr.基础属性["善恶值"] < -1000:
+        return "狡诈恶徒不得改名!"
     if usr.名称 != "无名":
         msg = "，花费一百两银子。"
         gold = 0
@@ -129,9 +131,16 @@ async def give_gold(user_id, user_name, at_qq, gold):
     '''赠送银两'''
 
     logger.debug(f"赠送银两 | <e>{user_id} -> {at_qq}</e> | {gold}")
-    user_info = UserInfo(at_qq)
-    if user_info.名称 == "无名":
+    at_user_info = UserInfo(at_qq)
+    if at_user_info.名称 == "无名":
         return "对方未改名, 无法赠送银两"
+    user_info = UserInfo(user_id)
+    善恶值 = user_info.基础属性["善恶值"]
+    手续费比例 = -善恶值 / 4000
+    if 手续费比例 >= 1:
+        手续费比例 = 0.90
+    if 手续费比例 < 0:
+        手续费比例 = 0
     con = db.user_info.find_one({"_id": user_id})
     if not con:
         con = {}
@@ -139,12 +148,21 @@ async def give_gold(user_id, user_name, at_qq, gold):
         logger.debug(f"赠送银两 | <e>{user_id} -> {at_qq}</e> | <r>银两不足</r>")
         return f"{user_name}，你的银两不足！"
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -gold}}, True)
-    db.user_info.update_one({"_id": at_qq}, {"$inc": {"gold": gold}}, True)
+    手续费 = int(gold * 手续费比例)
+    赠送银两 = gold - 手续费
+    db.user_info.update_one({"_id": at_qq}, {"$inc": {"gold": 赠送银两}}, True)
     logger.debug(f"赠送银两 | <e>{user_id} -> {at_qq}</e> | <g>成功！</g>")
-    return f"成功赠送{gold}两银子！"
+    if 手续费 > 0:
+        msg = f"成功赠送{赠送银两}两银子！(善恶值: {善恶值}, 赠送银两扣除手续费{手续费})"
+    else:
+        msg = f"成功赠送{赠送银两}两银子！"
+    return msg
 
 
 async def purchase_goods(user_id, res):
+    user_info = UserInfo(user_id)
+    if user_info.基础属性["善恶值"] < -2000:
+        return "善恶值过低, 无法购买物品"
     if len(res) > 2:
         return "输入错误"
     数量 = 1
@@ -162,7 +180,7 @@ async def purchase_goods(user_id, res):
         con = {}
     if con.get("gold", 0) < 总价:
         logger.debug(f"购买商品 | {商品} | <e>{user_id}</e> | <r>银两不足</r>")
-        return f"你的银两不足！"
+        return "你的银两不足！"
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -总价}}, True)
     db.knapsack.update_one({"_id": user_id}, {"$inc": {商品: 数量}}, True)
     return "购买成功!"
@@ -186,7 +204,7 @@ async def use_goods(user_id, res):
         con = {}
     if con.get(物品, 0) < 数量:
         logger.debug(f"使用物品 | {物品} | <e>{user_id}</e> | <r>物品数量不足</r>")
-        return f"你的物品数量不足！"
+        return "你的物品数量不足！"
     user_info = UserInfo(user_id)
     db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
     msg = 使用物品(user_info, 数量)
