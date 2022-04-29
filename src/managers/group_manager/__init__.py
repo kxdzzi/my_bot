@@ -1,8 +1,4 @@
-import asyncio
 import datetime
-import os
-import random
-import time
 from typing import Literal
 
 from nonebot import get_bots, on_notice, on_regex, on_request
@@ -21,8 +17,7 @@ from src.utils.browser import browser
 from src.utils.config import config
 from src.utils.db import db
 from src.utils.log import logger
-from src.utils.scheduler import scheduler
-from src.utils.utils import GroupList_Async
+
 
 from . import data_source as source
 '''
@@ -242,14 +237,15 @@ async def _():
 @friend_request.handle()
 async def _(bot: Bot, event: FriendRequestEvent):
     """加好友事件"""
-    out_of_work_bot = [
-        bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})
-    ]
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
+    bot_info = db.bot_info.find({"_id": bot_id})
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
-    is_black, _ = check_black_list(user_id, "QQ")
-    approve = (bot_id not in out_of_work_bot) and (not is_black)
+    if bot_info.get("master"):
+        approve = True
+    else:
+        is_black, _ = check_black_list(user_id, "QQ")
+        approve = not is_black and bot_info.get("work_stat")
     await bot.set_friend_add_request(
         flag=event.flag,
         approve=approve,

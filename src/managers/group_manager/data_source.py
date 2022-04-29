@@ -169,6 +169,10 @@ async def handle_data_notice(group_id: int, notice_type: Literal["离群通知",
 async def check_add_bot_to_group(bot: Bot, user_id: int,
                                  group_id: int) -> tuple:
     '''检查加群条件'''
+    bot_id = int(bot.self_id)
+    bot_info = db.bot_info.find_one({"_id": bot_id})
+    if bot_info.get("master") == user_id:
+        return True, None
     result, _ = check_black_list(user_id, "QQ")
     if result:
         return False, f"{user_id}太烦人被我拉黑了, 下次注意点!"
@@ -187,20 +191,14 @@ async def check_add_bot_to_group(bot: Bot, user_id: int,
             add_black_list(user_id, "QQ", 2592000, f"加群{group_id}单日超过5次")
             return False, "单日拉机器人超过5次, 用户拉黑30天"
     manage_group = config.bot_conf.get("manage_group", [])
-    out_of_work_bot = [
-        bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})
-    ]
-    bot_id = int(bot.self_id)
-    access_group_num = db.bot_info.find_one({
-        '_id': bot_id
-    }).get("access_group_num", 50)
+    access_group_num = bot_info.get("access_group_num", 50)
     bot_group_num = db.group_conf.count_documents({"bot_id": bot_id})
     # 若群id不在管理群列表, 则需要进行加群条件过滤
     if group_id not in manage_group:
-        if bot_id in out_of_work_bot:
+        if not bot_info.get("work_stat"):
             return False, "老子放假了，你拉别的二猫子去！"
         elif bot_group_num >= access_group_num:
-            return False, f"老子最多只能加{access_group_num}个群，现在都加了{bot_group_num}，机器人不用休息的吗？你赶紧拉别的二猫子去，别拉我了！"
+            return False, f"老子最多只能加{access_group_num}个群，现在都加了{bot_group_num}个群，机器人不用休息的吗？你赶紧拉别的二猫子去，别拉我了！"
     return True, None
 
 
