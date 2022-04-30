@@ -239,7 +239,7 @@ async def _(bot: Bot, event: FriendRequestEvent):
     """加好友事件"""
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
-    bot_info = db.bot_info.find({"_id": bot_id})
+    bot_info = db.bot_info.find_one({"_id": bot_id})
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
     if bot_info.get("master"):
         approve = True
