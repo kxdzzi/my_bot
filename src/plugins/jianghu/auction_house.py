@@ -136,6 +136,9 @@ async def 下架商品(操作人id, 商品id):
 
 
 async def 购买商品(购买人id, 商品id):
+    user_info = UserInfo(购买人id)
+    if user_info.基础属性["善恶值"] < -2000:
+        return "善恶值过低, 无法购买物品"
     # 购买人银两是否足够
     商品 = db.auction_house.find_one({"_id": 商品id})
     if not 商品:

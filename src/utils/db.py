@@ -54,6 +54,11 @@ class DB():
         self.auction_house = self.db.auction_house
         # 奖池
         self.prize_pool = self.db.prize_pool
+        # 战斗记录
+        self.pk_log = self.db.pk_log
+
+        # 计数器
+        self.counters = self.db.counters
 
     def __enter__(self):
         return self
@@ -61,14 +66,14 @@ class DB():
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    def insert_auto_increment(self, collection, data):
-        _id = self.db.counters.find_one_and_update(
+    def insert_auto_increment(self, collection, data, id_name="_id"):
+        _id = self.counters.find_one_and_update(
             filter={"_id": collection},
             update={"$inc": {"sequence_value": 1}},
             upsert=True
         )["sequence_value"]
         data.update(
-            {"_id": _id}
+            {id_name: _id}
         )
         self.db[collection].insert_one(data)
         return _id

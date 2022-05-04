@@ -53,6 +53,10 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
     user_stat["当前内力"] = jianghu_data.当前内力
     base_attribute = jianghu_data.基础属性
     pagename = "my_info.html"
+    if base_attribute.get("击杀人", 0) >= 10000:
+        base_attribute["击杀人"] = db.jianghu.find_one({"_id": base_attribute["击杀人"]})["名称"]
+    else:
+        base_attribute["击杀人"] = "未知目标"
     img = await browser.template_to_image(user_name=user_name,
                                           user_id=user_id,
                                           pagename=pagename,
@@ -86,6 +90,8 @@ async def set_name(user_id, res):
     if db.jianghu.find_one({"名称": name}) or name == "无名":
         return "名称重复"
     usr = UserInfo(user_id)
+    if usr.基础属性["善恶值"] < -1000:
+        return "狡诈恶徒不得改名!"
     if usr.名称 != "无名":
         msg = "，花费一百两银子。"
         gold = 0
@@ -125,9 +131,16 @@ async def give_gold(user_id, user_name, at_qq, gold):
     '''赠送银两'''
 
     logger.debug(f"赠送银两 | <e>{user_id} -> {at_qq}</e> | {gold}")
-    user_info = UserInfo(at_qq)
-    if user_info.名称 == "无名":
+    at_user_info = UserInfo(at_qq)
+    if at_user_info.名称 == "无名":
         return "对方未改名, 无法赠送银两"
+    user_info = UserInfo(user_id)
+    善恶值 = user_info.基础属性["善恶值"]
+    手续费比例 = -善恶值 / 4000
+    if 手续费比例 >= 1:
+        手续费比例 = 0.9
+    if 手续费比例 < 0:
+        手续费比例 = 0
     con = db.user_info.find_one({"_id": user_id})
     if not con:
         con = {}
@@ -135,12 +148,21 @@ async def give_gold(user_id, user_name, at_qq, gold):
         logger.debug(f"赠送银两 | <e>{user_id} -> {at_qq}</e> | <r>银两不足</r>")
         return f"{user_name}，你的银两不足！"
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -gold}}, True)
-    db.user_info.update_one({"_id": at_qq}, {"$inc": {"gold": gold}}, True)
+    手续费 = int(gold * 手续费比例)
+    赠送银两 = gold - 手续费
+    db.user_info.update_one({"_id": at_qq}, {"$inc": {"gold": 赠送银两}}, True)
     logger.debug(f"赠送银两 | <e>{user_id} -> {at_qq}</e> | <g>成功！</g>")
-    return f"成功赠送{gold}两银子！"
+    if 手续费 > 0:
+        msg = f"成功赠送{赠送银两}两银子！(善恶值: {善恶值}, 赠送银两扣除手续费{手续费})"
+    else:
+        msg = f"成功赠送{赠送银两}两银子！"
+    return msg
 
 
 async def purchase_goods(user_id, res):
+    user_info = UserInfo(user_id)
+    if user_info.基础属性["善恶值"] < -2000:
+        return "善恶值过低, 无法购买物品"
     if len(res) > 2:
         return "输入错误"
     数量 = 1
@@ -158,7 +180,7 @@ async def purchase_goods(user_id, res):
         con = {}
     if con.get("gold", 0) < 总价:
         logger.debug(f"购买商品 | {商品} | <e>{user_id}</e> | <r>银两不足</r>")
-        return f"你的银两不足！"
+        return "你的银两不足！"
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -总价}}, True)
     db.knapsack.update_one({"_id": user_id}, {"$inc": {商品: 数量}}, True)
     return "购买成功!"
@@ -182,7 +204,7 @@ async def use_goods(user_id, res):
         con = {}
     if con.get(物品, 0) < 数量:
         logger.debug(f"使用物品 | {物品} | <e>{user_id}</e> | <r>物品数量不足</r>")
-        return f"你的物品数量不足！"
+        return "你的物品数量不足！"
     user_info = UserInfo(user_id)
     db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
     msg = 使用物品(user_info, 数量)
@@ -927,28 +949,51 @@ async def impart_skill(user_id, at_qq, 武学):
     return f"花费{需要花费银两}两银子，成功传授武学：{武学}"
 
 
-async def pk_log(战斗编号):
-    sk = Skill()
-    战斗记录文件 = os.path.join(sk.战斗记录目录, 战斗编号)
-    if not os.path.isfile(战斗记录文件):
-        return "战斗记录不存在，只能查看当天的战斗记录"
-    战斗记录 = []
-    with open(战斗记录文件, "r", encoding="utf-8") as f:
-        line = f.readline()
-        while line:
-            战斗记录.append(line)
-            line = f.readline()
+async def pk_log(日期, 编号):
+    战斗记录 = db.pk_log.find_one({"编号": 编号, "日期": 日期})
+    if not 战斗记录:
+        return "没有找到对应的战斗记录"
     data = {
-        "战斗记录": 战斗记录
+        "战斗记录": 战斗记录.get("记录")
     }
     pagename = "pk_log.html"
     img = await browser.template_to_image(pagename=pagename, **data)
     return MessageSegment.image(img)
 
 
-async def pk(动作, user_id, at_qq):
+async def pk(动作, user_id, 目标):
+    if 目标.isdigit():
+        目标_id = int(目标)
+        跨群 = False
+    else:
+        if 目标 == "无名":
+            return "此人过于神秘, 无法进攻"
+        江湖info = db.jianghu.find_one({"名称": 目标})
+        if not 江湖info:
+            return "找不到正确的目标"
+        目标_id = 江湖info["_id"]
+        跨群 = True
+    if 目标_id == user_id:
+        return "不可以打自己"
+    消耗精力 = 0
+    msg = ""
+    if 动作 == "偷袭":
+        消耗精力 = 1
+    elif 动作 == "死斗":
+        消耗精力 = 3
+    if 跨群:
+        if 动作 == "切磋":
+            return "不能通过名称进行切磋"
+        消耗精力 *= 2
+    if 消耗精力:
+        精力 = db.user_info.find_one({"_id": user_id}).get("energy", 0)
+        if 精力 < 消耗精力:
+            精力 = 0
+            return f"精力不足, 你只有{精力}精力, {动作}需要{消耗精力}精力"
+        msg = f"{动作}成功, 精力-{消耗精力}"
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -消耗精力}})
     战斗 = PK()
-    data = await 战斗.main(动作, user_id, at_qq)
+    data = await 战斗.main(动作, user_id, 目标_id, msg)
     if isinstance(data, str):
         return data
     pagename = "pk.html"
@@ -1118,7 +1163,8 @@ async def gad_guys_ranking(bot: Bot, user_id):
 
     result = db.jianghu.find(filter=filter, sort=sort, limit=limit)
     for n, i in enumerate(result):
-        msg += f"{n+1} {i.get('名称')} {i.get('善恶值', 0)}\n"
+        重伤 = "x" if i.get("重伤状态") else ""
+        msg += f"{n+1} {重伤}{i.get('名称')} {i.get('善恶值', 0)}\n"
     return msg
 
 
@@ -1131,7 +1177,8 @@ async def good_guys_ranking(bot: Bot, user_id):
     msg = "善人排行\n"
     result = db.jianghu.find(filter=filter, sort=sort, limit=limit)
     for n, i in enumerate(result):
-        msg += f"{n+1} {i['名称']} {i['善恶值']}\n"
+        重伤 = "x" if i.get("重伤状态") else ""
+        msg += f"{n+1} {重伤}{i['名称']} {i['善恶值']}\n"
     return msg
 
 
@@ -1153,11 +1200,9 @@ async def gear_ranking(bot: Bot, user_id):
     ])
     for n, i in enumerate(result):
         user_info = UserInfo(i['持有人'])
+        重伤 = "x" if user_info.基础属性.get("重伤状态") else ""
         名称 = user_info.基础属性["名称"]
-        if 名称 == "无名":
-            ret = await bot.get_stranger_info(user_id=i['_id'], no_cache=False)
-            名称 = ret['nickname']
-        msg += f"{n+1} {名称} {i['_id']} {i['总装分']}\n"
+        msg += f"{n+1} {i['_id']} {i['总装分']} {重伤}{名称}\n"
     return msg
 
 
@@ -1173,11 +1218,9 @@ async def gold_ranking(bot: Bot, user_id):
     result = db.user_info.find(filter=filter, sort=sort, limit=limit)
     for n, i in enumerate(result):
         user_info = UserInfo(i['_id'])
+        重伤 = "x" if user_info.基础属性.get("重伤状态") else ""
         名称 = user_info.基础属性["名称"]
-        if 名称 == "无名":
-            ret = await bot.get_stranger_info(user_id=i['_id'], no_cache=False)
-            名称 = ret['nickname']
-        msg += f"{n+1} {名称} {i['gold']}\n"
+        msg += f"{n+1} {重伤}{名称} {i['gold']}\n"
 
     ret = db.user_info.aggregate([{
         "$sort": {
