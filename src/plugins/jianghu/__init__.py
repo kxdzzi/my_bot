@@ -594,7 +594,7 @@ async def _(event: GroupMessageEvent):
 async def _(event: GroupMessageEvent):
     '''干架'''
     user_id = event.user_id
-    at_member_obj = re.compile(r"^(切磋|偷袭|死斗) *[\[CQ:at,qq=]*(\d+|.{1,8}\]{0,1} *$")
+    at_member_obj = re.compile(r"^(切磋|偷袭|死斗) *[\[CQ:at,qq=]*(\d+|.{1,8})\]{0,1} *$")
     at_member_list = at_member_obj.findall(event.raw_message)
     if not at_member_list:
         msg = "需要艾特你要干的人, 或是输入正确的名字"
