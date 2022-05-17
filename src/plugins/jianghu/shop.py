@@ -156,31 +156,31 @@ def _开宝箱(自己: UserInfo,
             if 图纸名称 not in 获得图纸:
                 获得图纸[图纸名称] = 0
             获得图纸[图纸名称] += 1
-        if 获得银两:
-            msg += f"\n{获得银两}两银子"
-            db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": 获得银两}})
-        if 获得材料 or 获得图纸:
-            背包 = db.knapsack.find_one({"_id": user_id})
-            图纸 = 背包.get("图纸", {})
-            材料 = 背包.get("材料", {})
-            if 获得材料:
-                for k, v in 获得材料.items():
-                    if k not in 材料:
-                        材料[k] = 0
-                    材料[k] += v
-                    msg += f"\n{k}*{v}"
-            if 获得图纸:
-                for k, v in 获得图纸.items():
-                    if k not in 图纸:
-                        图纸[k] = 0
-                    图纸[k] += v
-                    msg += f"\n{k}*{v}"
-            db.knapsack.update_one({"_id": user_id},
-                                   {"$set": {
-                                       "图纸": 图纸,
-                                       "材料": 材料
-                                   }})
-        return msg
+    if 获得银两:
+        msg += f"\n{获得银两}两银子"
+        db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": 获得银两}})
+    if 获得材料 or 获得图纸:
+        背包 = db.knapsack.find_one({"_id": user_id})
+        图纸 = 背包.get("图纸", {})
+        材料 = 背包.get("材料", {})
+        if 获得材料:
+            for k, v in 获得材料.items():
+                if k not in 材料:
+                    材料[k] = 0
+                材料[k] += v
+                msg += f"\n{k}*{v}"
+        if 获得图纸:
+            for k, v in 获得图纸.items():
+                if k not in 图纸:
+                    图纸[k] = 0
+                图纸[k] += v
+                msg += f"\n{k}*{v}"
+        db.knapsack.update_one({"_id": user_id},
+                                {"$set": {
+                                    "图纸": 图纸,
+                                    "材料": 材料
+                                }})
+    return msg
 
 
 def 青铜宝箱(自己: UserInfo, 数量: int):

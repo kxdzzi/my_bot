@@ -724,7 +724,7 @@ async def claim_rewards(user_id):
         材料[获得材料名称] += 1
         msg += f", {获得材料名称}"
     for _ in range(获得图纸):
-        图纸等级 = random.randint(2000, 3000)
+        图纸等级 = random.randint(2500, 3500)
         图纸类型 = random.choice(["武器", "饰品", "外装"])
         获得图纸名称 = 图纸类型 + str(图纸等级)
         if 获得图纸名称 not in 图纸:
