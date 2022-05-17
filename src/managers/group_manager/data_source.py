@@ -196,9 +196,9 @@ async def check_add_bot_to_group(bot: Bot, user_id: int,
     # 若群id不在管理群列表, 则需要进行加群条件过滤
     if group_id not in manage_group:
         if not bot_info.get("work_stat"):
-            return False, "老子放假了，你拉别的二猫子去！"
+            return False, "老子放假了，你拉别的机器人去！"
         elif bot_group_num >= access_group_num:
-            return False, f"老子最多只能加{access_group_num}个群，现在都加了{bot_group_num}个群，机器人不用休息的吗？你赶紧拉别的二猫子去，别拉我了！"
+            return False, f"老子最多只能加{access_group_num}个群，现在都加了{bot_group_num}个群，机器人不用休息的吗？你赶紧拉别的机器人去，别拉我了！"
     return True, None
 
 

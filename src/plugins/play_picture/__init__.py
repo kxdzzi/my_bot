@@ -67,11 +67,12 @@ async def _():
 @ermaozi.handle()
 async def _(event: GroupMessageEvent):
     content = ""
+    nickname = "二猫子"
     for i in event.message:
         if i.type == "text":
             content += i.data.get("text", "")
     if content:
-        msg = await chat(content)
+        msg = await chat(content, nickname)
     else:
-        msg = "你说的啥？我看不懂，我觉得你是在为难我二猫子！"
+        msg = f"你说的啥？我看不懂，我觉得你是在为难我{nickname}！"
     await ermaozi.finish(msg)

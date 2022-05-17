@@ -15,7 +15,7 @@ Export.plugin_command = "投喂二猫子"
 Export.plugin_usage = "钱多的老爷可以投喂二猫子，但是不会获得任何收益"
 Export.default_status = True
 
-tipping = on_regex(r"^投喂二猫子$", permission=GROUP, priority=1, block=True)
+tipping = on_regex(r"^(投喂|打赏)(二猫子)*$", permission=GROUP, priority=1, block=True)
 
 
 @tipping.handle()

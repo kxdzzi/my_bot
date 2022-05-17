@@ -66,7 +66,7 @@ exit_group = on_regex(pattern=r"^(退群 \d+)$",
                       priority=1,
                       block=True)
 
-bot_list = on_regex(pattern=r"^(机器人|二猫子)列表$",
+bot_list = on_regex(pattern=r"^机器人列表$",
                     permission=GROUP,
                     priority=5,
                     block=True)
@@ -301,10 +301,10 @@ async def _(event: GroupMessageEvent):
                 f"{bot_id: 11d} | {bot_group_num}/{access_group_num}"
             )
     if available_bot_list:
-        msg = "  二猫子QQ   | 群数量\n"
+        msg = "  机器人QQ   | 群数量\n"
         msg += "\n".join(available_bot_list) 
     else:
-        msg = "暂无可用的二猫子"
+        msg = "暂无可用的机器人"
     await bot_list.finish(msg)
 
 
@@ -329,7 +329,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
             for usr in group_member_list:
                 group_user_id = int(usr["user_id"])
                 if group_user_id in bot_id_list and group_user_id != self_id:
-                    msg = "一群不容二二猫！！你说"
+                    msg = "一群不容二我！！你说"
                     msg += MessageSegment.at(group_user_id)
                     msg += "是什么情况？我退了！！\n你在把它踢了之前，不要再拉我了！"
                     logger.warning(

@@ -11,7 +11,7 @@ secretId = config.nlp.get("secretId")
 secretKey = config.nlp.get("secretKey")
 
 
-async def chat(msg):
+async def chat(msg, nickname="二猫子"):
     try:
         cred = credential.Credential(secretId, secretKey)
         httpProfile = HttpProfile()
@@ -20,15 +20,15 @@ async def chat(msg):
         clientProfile = ClientProfile()
         clientProfile.httpProfile = httpProfile
         client = nlp_client.NlpClient(cred, "ap-guangzhou", clientProfile)
-        msg = msg.replace("二猫子", "腾讯小龙女")
+        msg = msg.replace(nickname, "腾讯小龙女")
         req = models.ChatBotRequest()
         params = {"Query": str(msg)}
         req.from_json_string(json.dumps(params))
 
         resp = client.ChatBot(req)
         reply = resp.Reply
-        reply = reply.replace("腾讯小龙女", "二猫子").replace("小龙女", "二猫子").replace(
-            "可爱小姐姐", "二猫子").replace("小仙女", "二猫子").replace("龙女", "二猫子")
+        reply = reply.replace("腾讯小龙女", nickname).replace("小龙女", nickname).replace(
+            "可爱小姐姐", nickname).replace("小仙女", nickname).replace("龙女", nickname)
         return reply
     except TencentCloudSDKException as err:
         print(err)
