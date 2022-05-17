@@ -107,23 +107,20 @@ async def set_name(user_id, res):
     return "改名成功" + msg
 
 
-async def dig_for_treasure(user_id):
+async def dig_for_treasure(user_id, number):
     精力 = db.user_info.find_one({"_id": user_id}).get("energy", 0)
-    if 精力 < 10:
+    消耗精力 = number * 10
+    if 精力 < 消耗精力:
         精力 = 0
-        return f"精力不足, 你只有{精力}精力, 挖宝需要10精力"
-    装备池 = list(db.equip.find({"持有人": -2}, projection={"装备分数": 1, "镶嵌分数": 1}))
-    if 10 < random.randint(0, len(装备池)):
-        装备 = random.choice(装备池)
-        装备名称 = 装备["_id"]
-        装备分数 = 装备.get("装备分数", 0) + 装备.get("镶嵌分数", 0)
-        db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10}})
-        db.equip.update_one({"_id": 装备名称}, {"$set": {"持有人": user_id}})
-        msg = f"获得装备【{装备名称}】({装备分数}), 精力-10, 当前精力{精力-10}"
-    else:
-        获得银两 = random.randint(1000, 5000)
-        db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10, "gold": 获得银两}})
-        msg = f"获得{获得银两}两银子, 精力-10, 当前精力{精力-10}"
+        return f"精力不足, 你只有{精力}精力, 挖宝{number}次需要{消耗精力}精力"
+    获得物品 = {}
+    for i in random.choices(["青铜宝箱", "精铁宝箱", "素银宝箱", "鎏金宝箱"], k=number):
+        if i not in 获得物品:
+            获得物品[i] = 0
+        获得物品[i] += 1
+    db.knapsack.update_one({"_id": user_id}, {"$inc": 获得物品}, True)
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10}})
+    msg = f"精力-10, 获得: {'、'.join([f'{k}*{v}' for k, v in 获得物品.items()])}"
     return msg
 
 
@@ -703,11 +700,11 @@ async def claim_rewards(user_id):
     contribution -= 获得银两
     图纸分 = contribution // 3
     材料分 = contribution - 图纸分
-    获得彩材料 = 材料分 // 770000
-    获得紫材料 = (材料分 - 获得彩材料*770000) // 180000
+    获得彩材料 = 材料分 // 720000
+    获得紫材料 = (材料分 - 获得彩材料*720000) // 150000
     if 获得紫材料 < 0:
         获得紫材料 = 0
-    获得图纸 = 图纸分 // 600000
+    获得图纸 = 图纸分 // 550000
     背包 = db.knapsack.find_one({"_id": user_id})
     图纸 = 背包.get("图纸", {})
     材料 = 背包.get("材料", {})
