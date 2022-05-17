@@ -178,8 +178,8 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     user_id = event.user_id
     group_id = event.group_id
     number = 1
-    if len(res) == 2:
-        number = int(res[-1])
+    if len(res) == 1:
+        number = int(res[0])
     logger.info(f"<y>群{group_id}</y> | <g>{user_id}</g> | 挖宝")
     msg = await source.dig_for_treasure(user_id, number)
     await dig_for_treasure.finish(msg)

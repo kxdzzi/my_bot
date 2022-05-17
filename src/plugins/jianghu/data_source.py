@@ -119,8 +119,8 @@ async def dig_for_treasure(user_id, number):
             获得物品[i] = 0
         获得物品[i] += 1
     db.knapsack.update_one({"_id": user_id}, {"$inc": 获得物品}, True)
-    db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10}})
-    msg = f"精力-10, 获得: {'、'.join([f'{k}*{v}' for k, v in 获得物品.items()])}"
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -消耗精力}})
+    msg = f"精力-{消耗精力}, 获得: {'、'.join([f'{k}*{v}' for k, v in 获得物品.items()])}"
     return msg
 
 
