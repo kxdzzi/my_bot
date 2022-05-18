@@ -114,7 +114,13 @@ async def dig_for_treasure(user_id, number):
         精力 = 0
         return f"精力不足, 你只有{精力}精力, 挖宝{number}次需要{消耗精力}精力"
     获得物品 = {}
-    for i in random.choices(["青铜宝箱", "精铁宝箱", "素银宝箱", "鎏金宝箱"], k=number):
+    宝箱列表 = [
+        "青铜宝箱", "青铜宝箱", "青铜宝箱", "青铜宝箱",
+        "精铁宝箱", "精铁宝箱", "精铁宝箱",
+        "素银宝箱", "素银宝箱",
+        "鎏金宝箱"
+    ]
+    for i in random.choices(宝箱列表, k=number):
         if i not in 获得物品:
             获得物品[i] = 0
         获得物品[i] += 1
