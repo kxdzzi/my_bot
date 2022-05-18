@@ -217,7 +217,9 @@ async def _(bot: Bot, event: GroupMessageEvent):
     '''菜单'''
     pagename = "meau.html"
     meau_data = await source.get_meau_data(event.group_id)
-    nickname = list(bot.config.nickname)[0]
+    nickname = db.bot_info.find_one({
+        "_id": int(bot.self_id)
+    }).get("bot_name", "二猫子")
     bot_id = bot.self_id
 
     img = await browser.template_to_image(pagename=pagename,
