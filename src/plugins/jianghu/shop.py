@@ -151,7 +151,7 @@ def _开宝箱(自己: UserInfo,
             获得材料[材料名称] += 材料数量
         if random.randint(1, 100) < 图纸概率:
             图纸属性 = random.choice(["武器", "饰品", "外装"])
-            图纸等级 = random.int(图纸等级下限, 图纸等级上限)
+            图纸等级 = random.randint(图纸等级下限, 图纸等级上限)
             图纸名称 = f"{图纸属性}{图纸等级}"
             if 图纸名称 not in 获得图纸:
                 获得图纸[图纸名称] = 0
@@ -176,10 +176,10 @@ def _开宝箱(自己: UserInfo,
                 图纸[k] += v
                 msg += f"\n{k}*{v}"
         db.knapsack.update_one({"_id": user_id},
-                                {"$set": {
-                                    "图纸": 图纸,
-                                    "材料": 材料
-                                }})
+                               {"$set": {
+                                   "图纸": 图纸,
+                                   "材料": 材料
+                               }})
     return msg
 
 
