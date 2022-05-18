@@ -1,15 +1,15 @@
 import random
+import re
 
 import requests
-from nonebot import export, on_regex, on_message
-import re
-from nonebot.rule import to_me
-from nonebot.adapters.onebot.v11.permission import GROUP
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-from nonebot import on_regex
+from nonebot import export, on_message, on_regex
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
+from nonebot.adapters.onebot.v11.permission import GROUP
+from nonebot.rule import to_me
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from src.utils.chat import chat
+from src.utils.db import db
 from tortoise import os
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -32,10 +32,7 @@ xz_xia = on_regex(r"^.{0,5}(虾|🦞|🦐)+.{0,5}$",
                   priority=5,
                   block=True)
 
-ermaozi = on_message(rule=to_me(),
-                     permission=GROUP,
-                     priority=10,
-                     block=True)
+ermaozi = on_message(rule=to_me(), permission=GROUP, priority=10, block=True)
 
 
 @yellow.handle()
@@ -65,9 +62,12 @@ async def _():
 
 
 @ermaozi.handle()
-async def _(event: GroupMessageEvent):
+async def _(bot: Bot, event: GroupMessageEvent):
     content = ""
-    nickname = "二猫子"
+
+    nickname = db.bot_info.find_one({
+        "_id": int(bot.self_id)
+    }).get("bot_name", "二猫子")
     for i in event.message:
         if i.type == "text":
             content += i.data.get("text", "")

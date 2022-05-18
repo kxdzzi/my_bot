@@ -287,7 +287,7 @@ async def _(event: GroupMessageEvent,
 
 @bot_list.handle()
 async def _(event: GroupMessageEvent):
-    '''查看二猫子列表'''
+    '''查看机器人列表'''
     bot_info_list = db.bot_info.find({"work_stat": True})
     available_bot_list = []
     for bot_info in bot_info_list:
@@ -361,7 +361,7 @@ async def _(bot: Bot, event: GroupDecreaseNoticeEvent):
         bot_id_list = [int(i["_id"]) for i in _con]
     # 在机器人列表中且非自己
     if user_id in bot_id_list and user_id != self_id:
-        msg = "哈哈哈，你走了正好，群里就只剩下我一个二猫子了！哈哈哈哈哈哈哈！"
+        msg = "哈哈哈，你走了正好，群里就只剩下我一个了！哈哈哈哈哈哈哈！"
         await notice.finish(msg)
     # 判断是否是机器人退群
     if user_id == self_id:
