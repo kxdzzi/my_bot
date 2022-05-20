@@ -1,14 +1,14 @@
 import time
 from datetime import datetime
-from typing import Optional, Tuple, List
-from httpx import AsyncClient
-from .config import JX3APP
+from typing import List, Optional, Tuple
 
+from httpx import AsyncClient
+from nonebot.adapters.onebot.v11.message import MessageSegment
+from src.utils.config import config
 from src.utils.db import db
 from src.utils.log import logger
-from .config import SERENDIPITY
-from src.utils.config import config
 
+from .config import JX3APP, SERENDIPITY
 from .model import jx3_searcher, ticket_manager
 
 
@@ -22,24 +22,43 @@ async def get_main_server(server: str) -> Optional[str]:
     return await jx3_searcher.get_server(server)
 
 
-async def get_sand(server_name):
+async def get_sand(server):
     client = AsyncClient()
-    url = "https://www.j3sp.com/api/user/login/"
-    params = {
-        "account": config.jx3sand.get("account"),
-        "password": config.jx3sand.get("password")
-    }
-    req = await client.get(url=url, params=params)
-    token = req.json()["data"]["userinfo"]["token"]
-    client.headers = {"token": token, "User-Agent": "Nonebot2-jx3_bot"}
+    with open("sptoken", "r") as f:
+        token = f.read()
+    for _ in range(10):
+        client.headers = {"token": token, "User-Agent": "Nonebot2-jx3_bot"}
+        url = "https://www.j3sp.com/api/token/check"
+        req = await client.get(url=url)
+        expires_in = req.json().get("data", {}).get("expires_in", 0)
+        if expires_in > 3600:
+            break
+        else:
+            url = "https://www.j3sp.com/api/user/login/"
+            params = {
+                "account": config.jx3sand.get("account"),
+                "password": config.jx3sand.get("password")
+            }
+            req = await client.get(url=url, params=params)
+            token = req.json().get("data", {}).get("userinfo", {}).get("token")
+    with open("sptoken", "w") as f:
+        f.write(token)
     url = "https://www.j3sp.com/api/sand/"
     params = {
-        "serverName": server_name,
+        "serverName": server,
         "is_history": 0,
         "shadow": 1
     }
     req = await client.get(url=url, params=params)
-    return req.json()["data"]["sand_data"]
+    sand_data = req.json().get("data", {}).get("sand_data")
+    if sand_data:
+        sandImage = sand_data["sandImage"]
+        createTime = sand_data["createTime"]
+        msg = f"【{server}】沙盘，更新时间：{createTime}"+MessageSegment.image(sandImage)
+    else:
+        msg = "没能查到沙盘信息"
+    return msg
+
 
 async def get_data_from_api(app: JX3APP, group_id: int, params: dict, need_ticket: bool = False) -> Tuple[str, dict]:
     '''

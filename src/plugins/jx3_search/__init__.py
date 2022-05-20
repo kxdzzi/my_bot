@@ -230,18 +230,8 @@ async def _(event: GroupMessageEvent, server: str = Depends(get_server_1)):
     logger.info(
         f"<y>群{event.group_id}</y> | <g>{event.user_id}</g> | 沙盘查询 | 请求：{server}"
     )
-    params = {
-        "server": server
-    }
-    msg, data = await source.get_data_from_api(app=JX3APP.沙盘图片, group_id=event.group_id,  params=params)
-    if msg != "success":
-        msg = f"查询失败，{msg}"
-        await sand_query.finish(msg)
 
-    url = data[0]['url']
-    time: int = data[0]['time']
-    day = datetime.fromtimestamp(time).strftime("%m-%d %H:%M")
-    msg = f"【{server}】沙盘，更新时间：{day}"+MessageSegment.image(url)
+    msg = await source.get_sand(server)
     await sand_query.finish(msg)
 
 
