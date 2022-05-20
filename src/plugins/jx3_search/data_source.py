@@ -24,13 +24,13 @@ async def get_main_server(server: str) -> Optional[str]:
 
 async def get_sand(server):
     client = AsyncClient()
-    with open("sptoken", "r") as f:
-        token = f.read()
+    token = db.bot_conf.find_one({"_id": 1}).get("sptoken")
     for _ in range(10):
         client.headers = {"token": token, "User-Agent": "Nonebot2-jx3_bot"}
         url = "https://www.j3sp.com/api/token/check"
         req = await client.get(url=url)
-        expires_in = req.json().get("data", {}).get("expires_in", 0)
+        data = req.json().get("data")
+        expires_in = data.get("expires_in", 0) if data else 0
         if expires_in > 3600:
             break
         else:
@@ -41,8 +41,7 @@ async def get_sand(server):
             }
             req = await client.get(url=url, params=params)
             token = req.json().get("data", {}).get("userinfo", {}).get("token")
-    with open("sptoken", "w") as f:
-        f.write(token)
+    db.bot_conf.update_one({"_id": 1}, {"$set": {"sptoken": token}}, True)
     url = "https://www.j3sp.com/api/sand/"
     params = {
         "serverName": server,
