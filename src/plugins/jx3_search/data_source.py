@@ -24,7 +24,7 @@ async def get_main_server(server: str) -> Optional[str]:
 
 async def get_sand(server):
     client = AsyncClient()
-    token = db.bot_conf.find_one({"_id": 1}).get("sptoken")
+    token = db.bot_conf.find_one({"_id": 1}).get("sptoken", "")
     for _ in range(10):
         client.headers = {"token": token, "User-Agent": "Nonebot2-jx3_bot"}
         url = "https://www.j3sp.com/api/token/check"
