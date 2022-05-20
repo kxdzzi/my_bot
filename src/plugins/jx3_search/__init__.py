@@ -392,16 +392,9 @@ async def _(event: GroupMessageEvent, name: str = Depends(get_ex_name)):
         f"<y>群{event.group_id}</y> | <g>{event.user_id}</g> | 攻略查询 | 请求：{name}"
     )
     params = {"name": name}
-    # 判断有没有token
-    token = all_config.jx3api['jx3_token']
-    if token is None:
-        msg, data = await source.get_data_from_api(app=JX3APP.免费奇遇攻略,
-                                                   group_id=event.group_id,
-                                                   params=params)
-    else:
-        msg, data = await source.get_data_from_api(app=JX3APP.付费奇遇攻略,
-                                                   group_id=event.group_id,
-                                                   params=params)
+    msg, data = await source.get_data_from_api(app=JX3APP.奇遇攻略,
+                                               group_id=event.group_id,
+                                               params=params)
     if msg != "success":
         msg = f"查询失败，{msg}"
         await strategy_query.finish(msg)
@@ -479,16 +472,10 @@ async def _(event: GroupMessageEvent,
     )
     params = {"server": server, "name": name}
     # 判断有没有token
-    token = all_config.jx3api['jx3_token']
-    if token is None:
-        msg, data = await source.get_data_from_api(app=JX3APP.免费奇遇查询,
-                                                   group_id=event.group_id,
-                                                   params=params)
-    else:
-        msg, data = await source.get_data_from_api(app=JX3APP.付费奇遇查询,
-                                                   group_id=event.group_id,
-                                                   params=params,
-                                                   need_ticket=True)
+    msg, data = await source.get_data_from_api(app=JX3APP.奇遇查询,
+                                               group_id=event.group_id,
+                                               params=params,
+                                               need_ticket=True)
 
     if msg != "success":
         msg = f"查询失败，{msg}"
