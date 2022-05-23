@@ -24,7 +24,7 @@ async def _(bot: Bot, event: PrivateMessageEvent):
     user_id = int(event.user_id)
     db.bot_info.update_one(
         {"_id": bot_id},
-        {"master": user_id, "enable": True, "access_group_num": 20},
+        {"$set": {"master": user_id, "enable": True, "access_group_num": 20}},
         True)
     msg = "激活成功!"
     await activation.finish(msg)
