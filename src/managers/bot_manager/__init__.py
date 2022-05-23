@@ -1,10 +1,33 @@
 
 import datetime
+
+from nonebot.adapters.onebot.v11 import Bot
+from nonebot.adapters.onebot.v11.event import PrivateMessageEvent
+from nonebot.plugin import on_regex
+from src.plugins.jianghu.auction_house import 下架商品
+from src.utils.config import config
 from src.utils.db import db
 from src.utils.log import logger
-from src.utils.config import config
 from src.utils.scheduler import scheduler
-from src.plugins.jianghu.auction_house import 下架商品
+
+activation = on_regex(pattern=r"^激活$",
+                      priority=5,
+                      block=True)
+
+
+@activation.handle()
+async def _(bot: Bot, event: PrivateMessageEvent):
+    bot_id = int(bot.self_id)
+    bot_info = db.bot_info.find_one({"_id": bot_id})
+    if bot_info.get("master"):
+        return
+    user_id = int(event.user_id)
+    db.bot_info.update_one(
+        {"_id": bot_id},
+        {"master": user_id, "enable": True, "access_group_num": 20},
+        True)
+    msg = "激活成功!"
+    await activation.finish(msg)
 
 
 async def remove_group_conf():
