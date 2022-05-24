@@ -1,4 +1,5 @@
 import re
+from enum import Enum
 
 from nonebot import export, on_regex
 from src.utils.db import db
@@ -12,24 +13,24 @@ Export.default_status = True
 class REGEX(Enum):
     '''正则枚举'''
     绑定角色 = r"^绑定角色( [\u4e00-\u9fa5]+){0,3}( \w+@\w+\.[a-z]{2,8}){0,1}$"
-    开团 = r"^开团 .+$"
-    团队信息 = r""
-    修改团队信息 = r""
-    报名开关 = r"^开团 .+$"
-    搜索团队 = r"^开团 .+$"
-    报名 = r"^开团 .+$"
-    标记老板 = r"^开团 .+$"
-    关注团长 = r""
-    我的关注 = r""
-    拉黑团员 = r""
-    拉黑团长 = r""
-    准备就绪 = r"^准备就绪$"
+    # 开团 = r"^开团 .+$"
+    # 团队信息 = r""
+    # 修改团队信息 = r""
+    # 报名开关 = r"^开团 .+$"
+    # 搜索团队 = r"^开团 .+$"
+    # 报名 = r"^开团 .+$"
+    # 标记老板 = r"^开团 .+$"
+    # 关注团长 = r""
+    # 我的关注 = r""
+    # 拉黑团员 = r""
+    # 拉黑团长 = r""
+    # 准备就绪 = r"^准备就绪$"
     
 
 bind_user = on_regex(pattern=REGEX.绑定角色.value, permission=GROUP, priority=5, block=True)
-create_team = on_regex(pattern=REGEX.开团.value, permission=GROUP, priority=5, block=True)
-search_team = on_regex(pattern=REGEX.搜索团队.value, permission=GROUP, priority=5, block=True)
-register = on_regex(pattern=REGEX.报名.value, permission=GROUP, priority=5, block=True)
+# create_team = on_regex(pattern=REGEX.开团.value, permission=GROUP, priority=5, block=True)
+# search_team = on_regex(pattern=REGEX.搜索团队.value, permission=GROUP, priority=5, block=True)
+# register = on_regex(pattern=REGEX.报名.value, permission=GROUP, priority=5, block=True)
 
 @bind_user.handle()
 async def _(event: GroupMessageEvent):
@@ -58,8 +59,8 @@ async def _(event: GroupMessageEvent):
 
 
     
-@create_team.hanle()
-async def _(event: GroupMessageEvent):
-    # 开团 集合时间(默认2小时后) 服务器(首选角色服务器, 次选群服务器) 团队名称(首次必填) 团队说明(首次必填)
-    user_id = event.user_id
+# @create_team.hanle()
+# async def _(event: GroupMessageEvent):
+#     # 开团 集合时间(默认2小时后) 服务器(首选角色服务器, 次选群服务器) 团队名称(首次必填) 团队说明(首次必填)
+#     user_id = event.user_id
 
