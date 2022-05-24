@@ -55,7 +55,7 @@ async def _(event: GroupMessageEvent):
         data["server"] = text_list[3]
     email = re.findall(r"\w+@\w+\.[a-z]{2,8}", text)
     if email:
-        data["email"] = email[1]
+        data["email"] = email[0]
     db.user_info.update_one({"_id": user_id}, {"$set": data}, True)
     await bind_user.finish("绑定成功!")
 
