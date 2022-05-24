@@ -1,7 +1,13 @@
 import re
 
-from nonebot import on_regex
+from nonebot import export, on_regex
 from src.utils.db import db
+
+Export = export()
+Export.plugin_name = "剑三开团"
+Export.plugin_command = "开团"
+Export.plugin_usage = "相当于是线下招募了"
+Export.default_status = True
 
 class REGEX(Enum):
     '''正则枚举'''
