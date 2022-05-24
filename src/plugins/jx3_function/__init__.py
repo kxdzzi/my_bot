@@ -2,6 +2,8 @@ import re
 from enum import Enum
 
 from nonebot import export, on_regex
+from nonebot.adapters.onebot.v11.event import GroupMessageEvent
+from nonebot.adapters.onebot.v11.message import MessageSegment
 from nonebot.adapters.onebot.v11.permission import GROUP
 from src.utils.db import db
 
