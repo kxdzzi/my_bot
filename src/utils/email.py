@@ -51,7 +51,7 @@ class MailClient(object):
         receiver_list = []
         for receiver in receivers:
             if isinstance(receiver, int):
-                cui_receiver = db.jianghu.find_one({"_id": receiver}).get("email")
+                cui_receiver = db.user_info.find_one({"_id": receiver}).get("email")
                 if cui_receiver:
                     receiver = cui_receiver
                 else:
