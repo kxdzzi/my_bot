@@ -2,6 +2,7 @@ import re
 from enum import Enum
 
 from nonebot import export, on_regex
+from nonebot.adapters.onebot.v11.permission import GROUP
 from src.utils.db import db
 
 Export = export()
