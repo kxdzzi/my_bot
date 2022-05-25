@@ -5,6 +5,7 @@ from src.utils.cooldown_time import search_record, search_once
 from src.utils.config import config
 from src.utils.log import logger
 from enum import Enum
+from dataclasses import dataclass
 
 @dataclass
 class APP(object):
