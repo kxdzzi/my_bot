@@ -341,7 +341,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
         logger.info(f"<y>bot({self_id})</y> | <g>加群({group_id})</g>")
         # 注册群
         await source.add_bot_to_group(group_id, int(self_id))
-        msg = '老子来了，我是免费的，如果你们花了钱那就是被骗了！'
+        msg = '老子来了，发送“菜单”看看吧！'
         await someone_in_group.finish(msg)
 
     flag = await source.get_notice_status(group_id, "welcome_status")
