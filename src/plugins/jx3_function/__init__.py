@@ -248,7 +248,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
         await create_team.finish("团队公告内容不太健康，改一下吧")
 
     # 获取成员配置
-    team_conf = re.findall(r" [\(（](.+?)[\)）]", text)
+    team_conf = re.findall(r" [\[【](.+?)[】\]]", text)
     team_configuration = {"人数": 25}
     if team_conf:
         team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5})(\d{1,2})",
@@ -356,8 +356,11 @@ async def _(event: GroupMessageEvent):
         res, index_x, index_y = index_in_list(transfer_index, team_members)
         if not res:
             await set_team.finish("位置不存在")
-        transfer_user_id = team_members[index_x][index_y]["user_id"]
-        transfer_user_name = team_members[index_x][index_y]["user_name"]
+        user = team_members[index_x][index_y]
+        if not user:
+            await set_team.finish("该位置上没有人")
+        transfer_user_id = user["user_id"]
+        transfer_user_name = user["user_name"]
         if transfer_user_id == user_id:
             await set_team.finish("不可以转让给自己")
         db.j3_teams.update_one(
@@ -425,7 +428,7 @@ async def _(event: GroupMessageEvent):
             team_info["server"] = server
         else:
             msg = "\n服务器写的不对"
-    team_conf = re.findall(r" [\[【](.+?)[】\]] ", text)
+    team_conf = re.findall(r" [\[【](.+?)[】\]]", text)
     if team_conf:
         team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5})(\d{1,2})",
                                     team_conf[0])
