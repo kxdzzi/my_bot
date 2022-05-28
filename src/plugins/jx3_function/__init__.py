@@ -21,7 +21,7 @@ Export.plugin_usage = "相当于是线下招募了"
 Export.default_status = True
 
 
-conf_list = ["人数", "输出", "治疗", "老板"]
+conf_list = ["人数", "输出", "治疗", "坦克", "老板"]
 
 
 class REGEX(Enum):
