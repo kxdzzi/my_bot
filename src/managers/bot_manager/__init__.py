@@ -1,5 +1,5 @@
 
-import datetime
+from datetime import datetime, timedelta
 
 from nonebot.adapters.onebot.v11 import Bot
 from nonebot.adapters.onebot.v11.event import PrivateMessageEvent
@@ -7,6 +7,7 @@ from nonebot.plugin import on_regex
 from src.plugins.jianghu.auction_house import 下架商品
 from src.utils.config import config
 from src.utils.db import db
+from src.utils.email import mail_client
 from src.utils.log import logger
 from src.utils.scheduler import scheduler
 
@@ -35,7 +36,7 @@ async def remove_group_conf():
     logger.info("删除10天未发言的群记录")
     db.group_conf.delete_many({
         'last_sent': {
-            "$lte": datetime.datetime.today() + datetime.timedelta(days=-3)
+            "$lte": datetime.today() + timedelta(days=-3)
         }
     })
     logger.info("重置群完成")
@@ -46,7 +47,7 @@ async def archive_river_lantern():
     logger.info("河灯归档")
     river_lantern_info = db.river_lantern.find({
         'last_sent': {
-            "$lte": datetime.datetime.today() + datetime.timedelta(days=-5)
+            "$lte": datetime.today() + timedelta(days=-5)
         }
     })
     archive = db.client["archive"]["river_lantern"]
@@ -63,7 +64,7 @@ async def pull_off_shelves():
     try:
         shelves = db.auction_house.find({
             '日期': {
-                "$lte": datetime.datetime.today() + datetime.timedelta(days=-5)
+                "$lte": datetime.today() + timedelta(days=-5)
             }
         })
 
@@ -72,6 +73,47 @@ async def pull_off_shelves():
         logger.info("自动下架商品完成")
     except Exception as e:
         logger.error(f"下架商品失败: {str(e)}")
+
+
+async def disband_team():
+    meeting_time = datetime.now() - timedelta(minutes=60)
+    team_infos = db.j3_teams.find({"meeting_time": {"$lte": meeting_time}})
+    for team_info in team_infos:
+        team_id = team_info["_id"]
+        logger.info(f"解散团队{team_id}")
+        for members in team_info["team_members"]:
+            for member in members:
+                if member:
+                    db.user_info.update_one(
+                        {"_id": member["user_id"]},
+                        {"$set": {"team": 0}})
+        db.j3_teams.delete_one({"_id": team_id})
+
+
+async def team_notice():
+    meeting_time = datetime.now() + timedelta(minutes=30)
+    team_infos = db.j3_teams.find(
+        {"meeting_time": {"$lte": meeting_time},
+         "need_notice": True})
+    if not team_infos:
+        return
+    notice_data = {}
+    for team_info in team_infos:
+        team_id = team_info["_id"]
+        notice_data[team_id] = {}
+        logger.info(f"开团通知{team_id}")
+        for members in team_info["team_members"]:
+            for member in members:
+                if member:
+                    await mail_client.send_mail(
+                        [member["user_id"]],
+                        "团队集合通知",
+                        f"您加入的团队【{team_id}】将于30分钟后集合\n"\
+                        f"团长：{team_info['team_leader_name']}({team_info['user_id']})\n"\
+                        f"可以发送“查看团队 {team_id}”查看团队信息")
+        db.j3_teams.update_one(
+            {"_id": team_id},
+            {"$set": {"need_notice": False}})
 
 
 @scheduler.scheduled_job("cron", hour=4, minute=0)
@@ -89,3 +131,10 @@ async def _():
     '''0点重置'''
     # 重置战斗记录编号
     db.counters.update_one({"_id": "pk_log"}, {"$set": {"sequence_value": 0}})
+
+
+@scheduler.scheduled_job("cron", minute="*")
+async def _():
+    """每分钟检测"""
+    await disband_team()
+    await team_notice()

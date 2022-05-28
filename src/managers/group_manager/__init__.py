@@ -2,10 +2,13 @@ import datetime
 from typing import Literal
 
 from nonebot import get_bots, on_notice, on_regex, on_request
-from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageSegment
-from nonebot.adapters.onebot.v11.event import (
-    FriendRequestEvent, GroupDecreaseNoticeEvent, GroupIncreaseNoticeEvent,
-    GroupMessageEvent, GroupRequestEvent, PrivateMessageEvent)
+from nonebot.adapters.onebot.v11 import Bot, Event, MessageSegment
+from nonebot.adapters.onebot.v11.event import (FriendRequestEvent,
+                                               GroupDecreaseNoticeEvent,
+                                               GroupIncreaseNoticeEvent,
+                                               GroupMessageEvent,
+                                               GroupRequestEvent,
+                                               PrivateMessageEvent)
 from nonebot.adapters.onebot.v11.permission import (GROUP, GROUP_ADMIN,
                                                     GROUP_OWNER)
 from nonebot.message import event_postprocessor
@@ -18,8 +21,8 @@ from src.utils.config import config
 from src.utils.db import db
 from src.utils.log import logger
 
-
 from . import data_source as source
+
 '''
 群管理插件，实现功能有：
 * 绑定服务器
@@ -167,18 +170,6 @@ def get_status(event: GroupMessageEvent) -> bool:
 def get_notice_type(event: GroupMessageEvent) -> Literal["离群通知", "进群通知"]:
     '''返回通知类型'''
     return event.get_plaintext()[:4]
-
-
-async def get_didi_msg(bot: Bot, event: GroupMessageEvent) -> Message:
-    '''返回要说的话'''
-    msg = event.get_message()
-    group = await bot.get_group_info(group_id=event.group_id)
-    group_name = group['group_name']
-    user_name = event.sender.card if event.sender.card != "" else event.sender.nickname
-    msg_header = f"[{group_name}]({event.group_id}) | {user_name}({event.user_id}) >\n"
-    msg[0] = MessageSegment.text(msg_header + str(msg[0])[3:])
-    return msg
-
 
 # ----------------------------------------------------------------
 #  matcher实现

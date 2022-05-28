@@ -6,10 +6,9 @@ from httpx import AsyncClient
 from nonebot.adapters.onebot.v11.message import MessageSegment
 from src.utils.config import config
 from src.utils.db import db
+from src.utils.jx3_search import (JX3APP, SERENDIPITY, jx3_searcher,
+                                  ticket_manager)
 from src.utils.log import logger
-
-from .config import JX3APP, SERENDIPITY
-from src.utils.jx3_search import jx3_searcher, ticket_manager
 
 
 async def get_server(group_id: int) -> str:

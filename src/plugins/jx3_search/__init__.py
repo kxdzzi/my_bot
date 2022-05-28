@@ -1,7 +1,6 @@
 import json
 import os
 import re
-from datetime import datetime
 from enum import Enum
 
 from nonebot import export, on_regex
@@ -11,11 +10,10 @@ from nonebot.adapters.onebot.v11.permission import GROUP
 from nonebot.matcher import Matcher
 from nonebot.params import Depends
 from src.utils.browser import browser
-from src.utils.config import config as all_config
+from src.utils.jx3_search import DAILIY_LIST, JX3APP, JX3PROFESSION
 from src.utils.log import logger
 
 from . import data_source as source
-from .config import DAILIY_LIST, JX3APP, JX3PROFESSION
 
 Export = export()
 Export.plugin_name = "剑三查询"
@@ -36,7 +34,7 @@ class REGEX(Enum):
     沙盘图片 = r"(^沙盘$)|(^沙盘 [\u4e00-\u9fa5]+$)"
     推荐小药 = r"(^小药 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+小药$)"
     推荐装备 = r"(^配装 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+配装$)"
-    查宏命令 = r"(^宏 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+宏$)"
+    查宏命令 = r"(^宏 [\u4e00-\u9fa5]+$))"
     阵眼效果 = r"(^阵眼 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+阵眼$)"
     物品价格 = r"^物价 [\u4e00-\u9fa5]+$"
     随机骚话 = r"^骚话$"
@@ -143,7 +141,7 @@ async def get_server_2(matcher: Matcher, event: GroupMessageEvent) -> str:
     if len(text_list) == 2:
         server = await source.get_server(event.group_id)
         if not server:
-            msg = f"还没绑定服务器，你让我怎么查？\n发送“绑定 服务器全称”就可以绑定服务器了。\n别发什么“绑定 双梦”、“绑定 电八”之类的黑话，我压根就看不懂！"
+            msg = "还没绑定服务器，你让我怎么查？\n发送“绑定 服务器全称”就可以绑定服务器了。\n别发什么“绑定 双梦”、“绑定 电八”之类的黑话，我压根就看不懂！"
             await matcher.finish(msg)
     else:
         get_server = text_list[1]
