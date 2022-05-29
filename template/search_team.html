@@ -17,40 +17,41 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="card" style="width:750px;padding:10px; background-image: url('img/bg.png');" id="main">
-            <table class="table table-sm table-bordered" style="border: 1px solid rgb(73, 69, 69)" align="center">
-                <thead>
-                    <tr>
-                        <td align="center" style="width: 30px" scope="col">序号</td>
-                        <td align="center" style="width: 80px" scope="col">团长</td>
-                        <td align="center" style="width: 50px" scope="col">服务器</td>
-                        <td align="center" style="width: 100px" scope="col">集合时间</td>
-                        <td align="center" style="width: 150px" scope="col">公告</td>
-                        <td align="center" style="width: 100px" scope="col">团队限制</td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for data in datas %}
-                    <tr>
-                        <td align="center">{{data._id}}</th>
-                        <td align="center" scope="col">{{data.team_leader_name}}</th>
-                        <td align="center" scope="col">{{data.server}}</th>
-                        <td align="center" scope="col">{{data.meeting_time}}</th>
-                        <td scope="col">{{data.team_announcements}}</th>
-                        <td align="center" scope="col">
+    <div class="card" style="width:750px;padding:10px; background-image: url('img/bg.png');" id="main">
+        <h2 align="center">搜索团队</h2><br>
+        <table class="table table-sm table-bordered" style="border: 1px solid rgb(73, 69, 69)" align="center">
+            <thead>
+                <tr>
+                    <td align="center" style="width: 30px" scope="col">序号</td>
+                    <td align="center" style="width: 80px" scope="col">团长</td>
+                    <td align="center" style="width: 50px" scope="col">服务器</td>
+                    <td align="center" style="width: 80px" scope="col">集合时间</td>
+                    <td align="center" style="width: 150px" scope="col">公告</td>
+                    <td align="center" style="width: 100px" scope="col">团队限制</td>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in datas %}
+                <tr>
+                    <td align="center">{{data._id}}</th>
+                    <td align="center" scope="col">{{data.team_leader_name}}</th>
+                    <td align="center" scope="col">{{data.server}}</th>
+                    <td align="center" scope="col">{{data.meeting_time}}</th>
+                    <td scope="col">{{data.team_announcements}}</th>
+                    <td align="center" scope="col">
+                        <span>
+                            {% for k, v in data.team_configuration.items() -%}
                             <span>
-                                {% for k, v in data.team_configuration.items() -%}
-                                <span>
-                                    <img height="25" width="25" src="sect/{{k}}.png"/>({{v.current}}/{{v.total}})
-                                </span>
-                                {%- endfor %}
+                                <img height="25" width="25" src="sect/{{k}}.png"/>({{v.current}}/{{v.total}})
                             </span>
-                        </th>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            {%- endfor %}
+                        </span>
+                    </th>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p class="text-center text-secondary">第{{ current }}页 共{{ total }}页</p>
     </div>
 </body>
 

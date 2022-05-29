@@ -19,11 +19,13 @@
 <body>
     <div class="container">
         <div class="card" style="width:750px;padding:10px; background-image: url('img/bg.png');" id="main">
+            <h2 align="center"></h2>
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-5">
                         <h4><strong>{{team_info.team_leader_name}}</strong></h4>
                         <strong style="font-size: 18px;">{{team_info.server}}</strong>
+                        <strong> {{team_info._id}}</strong>
                         {% if not team_info.public_switch %}
                             <span style="color: rgb(13, 72, 180)">私有团队</span>
                         {% endif %}
