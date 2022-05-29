@@ -1,13 +1,15 @@
 
+import asyncio
+import random
 from datetime import datetime, timedelta
 
-from nonebot.adapters.onebot.v11 import Bot
+from nonebot import get_bot
+from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot.adapters.onebot.v11.event import PrivateMessageEvent
 from nonebot.plugin import on_regex
 from src.plugins.jianghu.auction_house import 下架商品
 from src.utils.config import config
 from src.utils.db import db
-from src.utils.email import mail_client
 from src.utils.log import logger
 from src.utils.scheduler import scheduler
 
@@ -100,20 +102,41 @@ async def team_notice():
     notice_data = {}
     for team_info in team_infos:
         team_id = team_info["_id"]
-        notice_data[team_id] = {}
+        notice_data[team_id] = {
+            "team_leader_name": team_info["team_leader_name"],
+            "team_leader_id": team_info["user_id"],
+            "team": {}
+        }
         logger.info(f"开团通知{team_id}")
         for members in team_info["team_members"]:
             for member in members:
                 if member:
-                    await mail_client.send_mail(
-                        [member["user_id"]],
-                        "团队集合通知",
-                        f"您加入的团队【{team_id}】将于30分钟后集合\n"\
-                        f"团长：{team_info['team_leader_name']}({team_info['user_id']})\n"\
-                        f"可以发送“查看团队 {team_id}”查看团队信息")
-        db.j3_teams.update_one(
-            {"_id": team_id},
-            {"$set": {"need_notice": False}})
+                    user_id = member["user_id"]
+                    group_id = member["group_id"]
+                    bot_id = member["bot_id"]
+                    if group_id not in notice_data[team_id]["team"]:
+                        notice_data[team_id]["team"][group_id] = {"bot_id": bot_id}
+                        notice_data[team_id]["team"][group_id]["user"] = []
+                    notice_data[team_id]["team"][group_id]["user"].append(user_id)
+
+    for team_id, team_data in notice_data.items():
+        for group_id, user_data in team_data["team"].items():
+            try:
+                bot = get_bot(str(user_data["bot_id"]))
+            except KeyError as e:
+                logger.warning(e)
+            else:
+                msg = f"团队【{team_id}】将于 30 分钟后集合，请提前做好准备。\n"\
+                      f"团长：{team_data['team_leader_name']}({team_data['team_leader_id']})\n"\
+                      f"可以发送“查看团队 {team_id}”查看团队信息\n"
+                for user_id in user_data["user"]:
+                    msg += MessageSegment.at(user_id)
+                try:
+                    await bot.send_group_msg(group_id=group_id, message=msg)
+                    await asyncio.sleep(random.uniform(1, 5))
+                except Exception:
+                    logger.warning("开团通知发送失败")
+        db.j3_teams.update_one({"_id": team_id}, {"$set": {"need_notice": False}})
 
 
 @scheduler.scheduled_job("cron", hour=4, minute=0)

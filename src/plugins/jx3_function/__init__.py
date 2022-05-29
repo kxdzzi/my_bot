@@ -20,8 +20,16 @@ Export.plugin_command = "开团"
 Export.plugin_usage = "相当于是线下招募了"
 Export.default_status = True
 
-
-conf_list = ["人数", "输出", "治疗", "坦克", "老板"]
+conf_list = {
+    "人数": "人数",
+    "输出": "输出",
+    "治疗": "治疗",
+    "坦克": "坦克",
+    "老板": "老板",
+    "D": "输出",
+    "H": "治疗",
+    "T": "坦克",
+    "B": "老板"}
 
 
 class REGEX(Enum):
@@ -99,9 +107,10 @@ async def _(event: GroupMessageEvent):
                 break
         if flag:
             break
-    db.j3_teams.update_one(
-        {"_id": team_id},
-        {"$set": {"team_members": team_members}})
+    db.j3_teams.update_one({"_id": team_id},
+                           {"$set": {
+                               "team_members": team_members
+                           }})
     db.user_info.update_one({"_id": user_id}, {"$set": {"team": 0}})
     await exit_team.finish("退团成功")
 
@@ -123,9 +132,10 @@ async def _(event: GroupMessageEvent):
     for members in team_info["team_members"]:
         for member in members:
             if member:
-                db.user_info.update_one(
-                    {"_id": member["user_id"]},
-                    {"$set": {"team": 0}})
+                db.user_info.update_one({"_id": member["user_id"]},
+                                        {"$set": {
+                                            "team": 0
+                                        }})
     db.j3_teams.delete_one({"_id": team_id})
     await disband_team.finish("成功解散团队")
 
@@ -151,8 +161,10 @@ async def _(event: GroupMessageEvent):
         await transfer_team.finish("待转让人不在团队里了，换个人吧")
     db.j3_teams.update_one(
         {"_id": team_info["_id"]},
-        {"$set": {"user_id": transfer_id, "team_leader_name": transfer_name}}
-        )
+        {"$set": {
+            "user_id": transfer_id,
+            "team_leader_name": transfer_name
+        }})
     await transfer_team.finish("团队转让成功")
 
 
@@ -251,11 +263,11 @@ async def _(bot: Bot, event: GroupMessageEvent):
     team_conf = re.findall(r" [\[【](.+?)[】\]]", text)
     team_configuration = {"人数": 25}
     if team_conf:
-        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5})(\d{1,2})",
+        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5})|([DTHB])(\d{1,2})",
                                     team_conf[0])
         for k, v in team_conf_list:
             if k in conf_list:
-                team_configuration[k] = int(v)
+                team_configuration[conf_list[k]] = int(v)
             else:
                 profession = JX3PROFESSION.get_profession(k)
                 if profession:
@@ -267,11 +279,11 @@ async def _(bot: Bot, event: GroupMessageEvent):
         user_info['role'] = "治疗"
     else:
         user_info['role'] = "输出"
-    user_info["group_id"] = group_id
-    user_info["bot_id"] = bot_id
     team_leader_info = {
         "user_name": user_info['user_name'],
         "user_id": user_info['_id'],
+        "group_id": group_id,
+        "bot_id": bot_id,
         "profession": user_info['profession'],
         "role": user_info["role"]
     }
@@ -294,6 +306,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
         "team_announcements": team_announcements,
         "team_configuration": team_configuration,
         "registration_switch": True,
+        "public_switch": True,
         "need_notice": True
     }
     team_id = db.insert_auto_increment("j3_teams", insert_data)
@@ -324,6 +337,8 @@ async def _(event: GroupMessageEvent):
       转让团长: !转让[坐标]
       关闭报名: !关
       开启报名: !开
+      转为私有: !私有
+      转为公开: !公开
 
       标记成员: 标记=坐标
       踢出成员: -坐标
@@ -374,16 +389,23 @@ async def _(event: GroupMessageEvent):
 
     registration_switch = re.findall(r" [!！](开|关)", text)
     if registration_switch:
-        msg += f"团队报名开关：{registration_switch[-1]}"
-        team_info["registration_switch"] = True if registration_switch[-1] == "开" else False
+        msg += f"\n团队报名开关：{registration_switch[-1]}"
+        team_info["registration_switch"] = True if registration_switch[
+            -1] == "开" else False
 
-    set_user_role = re.findall(r" (输出|治疗|坦克|老板)=([1-5]{2})", text)
+    public_switch = re.findall(r" [!！](私有|公开)", text)
+    if public_switch:
+        msg += f"\n团队状态：{public_switch[-1]}"
+        team_info[
+            "public_switch"] = True if public_switch[-1] == "公开" else False
+
+    set_user_role = re.findall(r" (输出|治疗|坦克|老板|[DTHB])=([1-5]{2})", text)
     if set_user_role:
         for role, user_index in set_user_role:
             res, index_x, index_y = index_in_list(user_index, team_members)
             if not res:
                 continue
-            team_members[index_x][index_y]["role"] = role
+            team_members[index_x][index_y]["role"] = conf_list[role]
         team_info["team_members"] = team_members
     remove_user = re.findall(r" -([1-5]{2})", text)
     if remove_user:
@@ -430,16 +452,16 @@ async def _(event: GroupMessageEvent):
             msg = "\n服务器写的不对"
     team_conf = re.findall(r" [\[【](.+?)[】\]]", text)
     if team_conf:
-        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5})(\d{1,2})",
-                                    team_conf[0])
+        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5}|[DTHB])(\d{1,2})", team_conf[0])
         for k, v in team_conf_list:
             if k in conf_list:
-                team_info["team_configuration"][k] = int(v)
+                team_info["team_configuration"][conf_list[k]] = int(v)
             else:
                 profession = JX3PROFESSION.get_profession(k)
                 if profession:
                     team_info["team_configuration"][profession] = int(v)
-    meeting_time_str = re.findall(r"[0-1]{0,1}\d-[0-3]{0,1}\d [0-6]{0,1}\d[:：][0-6]{0,1}\d", text)
+    meeting_time_str = re.findall(
+        r"[0-1]{0,1}\d-[0-3]{0,1}\d [0-6]{0,1}\d[:：][0-6]{0,1}\d", text)
     if meeting_time_str:
         create_time = datetime.utcnow()
         now_year = create_time.year
@@ -473,7 +495,9 @@ def get_time_conf(team_info):
             team_members_sum += 1
             if profession in team_configuration:
                 if profession not in data:
-                    data[profession] = {"total": team_configuration[profession]}
+                    data[profession] = {
+                        "total": team_configuration[profession]
+                    }
                     data[profession]["current"] = 0
                 data[profession]["current"] += 1
             if role in team_configuration:
@@ -504,9 +528,10 @@ async def _(event: GroupMessageEvent):
     team_info["team_configuration"] = get_time_conf(team_info)
     datas = []
     for i, data in enumerate(zip(*team_info["team_members"])):
-        datas.append({"index": i+1, "data": data})
+        datas.append({"index": i + 1, "data": data})
     team_info["team_members"] = datas
-    team_info["meeting_time"] = team_info["meeting_time"].strftime("%Y-%m-%d %H:%M")
+    team_info["meeting_time"] = team_info["meeting_time"].strftime(
+        "%Y-%m-%d %H:%M")
     pagename = "view_team.html"
     img = await browser.template_to_image(pagename=pagename,
                                           team_info=team_info)
@@ -539,13 +564,21 @@ async def _(event: GroupMessageEvent):
         current_tmp = current
     else:
         current_tmp = ""
+    condition = text.replace(f"({server})",
+                             "").strip(f"搜索团队{current_tmp}").strip()
+
     filter = {
-        "server": server,
-        "registration_switch": True
+        "$or": [{
+            "group_id": group_id
+        }, {
+            "server": server,
+            "team_announcements": {
+                "$regex": condition
+            },
+            "registration_switch": True,
+            "public_switch": True
+        }]
     }
-    condition = text.replace(f"({server})", "").strip(f"搜索团队{current_tmp}").strip()
-    if condition:
-        filter["team_announcements"] = {"$regex": condition}
     sort = list({'meeting_time': -1}.items())
     total = db.j3_teams.count_documents(filter)
     limit = 10
@@ -559,7 +592,8 @@ async def _(event: GroupMessageEvent):
                                 skip=skip)
     datas = []
     for j3_team in j3_teams:
-        j3_team["meeting_time"] = j3_team["meeting_time"].strftime("%m-%d %H:%M")
+        j3_team["meeting_time"] = j3_team["meeting_time"].strftime(
+            "%m-%d %H:%M")
         j3_team["team_configuration"] = get_time_conf(j3_team)
         datas.append(j3_team)
     pagename = "search_team.html"
@@ -582,7 +616,7 @@ def check_team_leader_name(user_info, j3_teams):
                     "user_id": user_info['_id'],
                     "profession": user_info['profession'],
                     "role": user_info["role"],
-                    "group_id": user_info["role"],
+                    "group_id": user_info["group_id"],
                     "bot_id": user_info["bot_id"],
                 }
                 flag = True
@@ -637,6 +671,8 @@ async def _(bot: Bot, event: GroupMessageEvent):
         await register.finish("没有找到这个团队")
     if not j3_teams.get("registration_switch"):
         await register.finish("该团队已停止报名")
+    if not (j3_teams.get("public_switch") or j3_teams.get("group_id") != group_id):
+        await register.finish("该团队没有公开报名")
     user_info["group_id"] = group_id
     user_info["bot_id"] = bot_id
     if len(text_list) == 3:

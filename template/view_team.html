@@ -24,6 +24,9 @@
                     <div class="col-5">
                         <h4><strong>{{team_info.team_leader_name}}</strong></h4>
                         <strong style="font-size: 18px;">{{team_info.server}}</strong>
+                        {% if not team_info.public_switch %}
+                            <span style="color: rgb(13, 72, 180)">私有团队</span>
+                        {% endif %}
                         {% if not team_info.registration_switch %}
                             <span style="color: rgb(122, 24, 11)">暂停报名</span>
                         {% endif %}
@@ -52,11 +55,11 @@
                 </thead> -->
                 <tbody>
                     <th style="width: 50px" scope="col"></th>
-                    <td align="center" style="width: 100px" scope="col">1</td>
-                    <td align="center" style="width: 100px" scope="col">2</td>
-                    <td align="center" style="width: 100px" scope="col">3</td>
-                    <td align="center" style="width: 100px" scope="col">4</td>
-                    <td align="center" style="width: 100px" scope="col">5</td>
+                    <td align="center" style="width: 100px" scope="col">队伍一</td>
+                    <td align="center" style="width: 100px" scope="col">队伍二</td>
+                    <td align="center" style="width: 100px" scope="col">队伍三</td>
+                    <td align="center" style="width: 100px" scope="col">队伍四</td>
+                    <td align="center" style="width: 100px" scope="col">队伍五</td>
                     </tr>
                     {% for x in team_info.team_members %}
                     <tr>
