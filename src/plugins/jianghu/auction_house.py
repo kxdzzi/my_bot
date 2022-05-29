@@ -45,7 +45,7 @@ async def 上架商品(寄售人id, 商品名称, 价格, 备注=""):
             return "你没有这件装备"
         交易时间 = con.get("交易时间")
         if 交易时间:
-            交易保护时间 = 1800 - (datetime.now() - 交易时间).seconds
+            交易保护时间 = 120 - (datetime.now() - 交易时间).seconds
             if 交易保护时间 > 0:
                 return f"{商品名称}正在交易保护期间，无法售卖。剩余时间：{交易保护时间}秒"
         装备 = db.jianghu.find_one({"_id": 寄售人id})["装备"]

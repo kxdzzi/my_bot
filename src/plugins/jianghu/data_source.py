@@ -1121,7 +1121,7 @@ async def give(user_id, at_qq, 物品列表):
                     continue
                 交易时间 = data.get("交易时间")
                 if 交易时间:
-                    交易保护时间 = 1800 - (datetime.now() - 交易时间).seconds
+                    交易保护时间 = 120 - (datetime.now() - 交易时间).seconds
                     if 交易保护时间 > 0:
                         msg += f"\n{data['_id']}正在交易保护期间，无法赠送。剩余时间：{交易保护时间}秒"
                         continue
