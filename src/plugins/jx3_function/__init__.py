@@ -29,31 +29,29 @@ conf_list = {
     "D": "输出",
     "H": "治疗",
     "T": "坦克",
-    "B": "老板"}
+    "B": "老板"
+}
 
 
 class REGEX(Enum):
     '''正则枚举'''
-    绑定角色 = r"^绑定角色( [\u4e00-\u9fa5]{2,8}){0,3}( \w+@\w+\.[a-z]{2,8}){0,1}$"
+    角色管理 = r"^(角色管理|绑定角色)( -{0,1}[!！]{0,1}[\u4e00-\u9fa5]{2,8}){0,3}$"
     开团 = r"^开团 .+$"
     团队信息 = r"^(团队信息|查看团队)( *\d+){0,1}"
-    调整团队 = r"^调整团队 .+$"
+    调整团队 = r"^(调整团队|团队管理)( *\d+){0,1} .+$"
     搜索团队 = r"^搜索团队\d*( .+)*$"
-    报名 = r"^报名 (([\u4e00-\u9fa5]{2,5} ){0,1}\d+|[\u4e00-\u9fa5]{2,8})$"
+    报名 = r"^报名 ([\u4e00-\u9fa5]{2,8} ){0,1}\d+$"
+    解散团队 = r"^解散团队 \d+$"
     确认解散 = r"^确认解散 \d+$"
+    转让团队 = r"^转让团队 [1-5]{2}$"
     确认转让 = r"^确认转让 \d+$"
-    退出团队 = r"^退出团队+$"
-    # 关注团长 = r""
-    # 我的关注 = r""
-    # 拉黑团员 = r""
-    # 拉黑团长 = r""
-    # 准备就绪 = r"^准备就绪$"
+    退出团队 = r"^退出团队 ([\u4e00-\u9fa5]{2,8} ){0,1}\d+$"
 
 
-bind_user = on_regex(pattern=REGEX.绑定角色.value,
-                     permission=GROUP,
-                     priority=5,
-                     block=True)
+user_manage = on_regex(pattern=REGEX.角色管理.value,
+                       permission=GROUP,
+                       priority=5,
+                       block=True)
 create_team = on_regex(pattern=REGEX.开团.value,
                        permission=GROUP,
                        priority=5,
@@ -74,14 +72,23 @@ set_team = on_regex(pattern=REGEX.调整团队.value,
                     permission=GROUP,
                     priority=5,
                     block=True)
-disband_team = on_regex(pattern=REGEX.确认解散.value,
+disband_team = on_regex(pattern=REGEX.解散团队.value,
                         permission=GROUP,
                         priority=5,
                         block=True)
-transfer_team = on_regex(pattern=REGEX.确认转让.value,
+confirm_disband_team = on_regex(pattern=REGEX.确认解散.value,
+                                permission=GROUP,
+                                priority=5,
+                                block=True)
+
+transfer_team = on_regex(pattern=REGEX.转让团队.value,
                          permission=GROUP,
                          priority=5,
                          block=True)
+confirm_transfer_team = on_regex(pattern=REGEX.确认转让.value,
+                                 permission=GROUP,
+                                 priority=5,
+                                 block=True)
 exit_team = on_regex(pattern=REGEX.退出团队.value,
                      permission=GROUP,
                      priority=5,
@@ -90,19 +97,33 @@ exit_team = on_regex(pattern=REGEX.退出团队.value,
 
 @exit_team.handle()
 async def _(event: GroupMessageEvent):
+    """退出团队"""
     user_id = int(event.user_id)
     user_info = db.user_info.find_one({"_id": user_id})
-    team_id = user_info.get("team")
-    if not team_id:
-        await exit_team.finish("你没有加入过任何团队")
+    default_user = user_info["default_user"]
+    if not default_user:
+        await exit_team.finish(
+            "你还没有绑定过角色，哪来的团队？请发送以下命令进行绑定:\n角色管理 角色名称 心法 服务器(选填)")
+    text = event.get_plaintext()
+    text_list = text.split()
+    if len(text_list) == 3:
+        user_name = text_list[1]
+        team_id = int(text_list[2])
+    else:
+        user_name = default_user
+        team_id = int(text_list[1])
+    if team_id not in user_info["teams"][user_name]:
+        await exit_team.finish("你没有加入过该团队")
     team_info = db.j3_teams.find_one({"_id": team_id})
-    if team_info["user_id"] == user_id:
+    if team_info["user_id"] == user_id and team_info[
+            "team_leader_name"] == user_name:
         await exit_team.finish("团长不能退团，如果要解散团队请发送“调整团队 !解散”")
     flag = False
     team_members = team_info["team_members"]
     for x, members in enumerate(team_members):
         for y, member in enumerate(members):
-            if member.get("user_id") == user_id:
+            if member.get("user_id") == user_id and member.get(
+                    "user_name") == user_name:
                 team_members[x][y] = {}
                 break
         if flag:
@@ -111,11 +132,60 @@ async def _(event: GroupMessageEvent):
                            {"$set": {
                                "team_members": team_members
                            }})
-    db.user_info.update_one({"_id": user_id}, {"$set": {"team": 0}})
+    del_user_team(user_id, user_name, team_id)
     await exit_team.finish("退团成功")
 
 
+def disband(user_id, team_id):
+    "解散"
+    team_info = db.j3_teams.find_one({"_id": team_id})
+    if not team_info:
+        return False, "团队不存在，请发送“团队信息”进行查看"
+    user_info = db.user_info.find_one({"_id": user_id})
+    team_leader_name = team_info.get("team_leader_name")
+    if team_info.get(
+            "user_id"
+    ) != user_id or team_leader_name not in user_info["teams"]:
+        return False, "你不是团长，不能调整团队"
+    db.j3_teams.update_one({"_id": team_id}, {"$set": {"is_disband": True}})
+    return True, f"解散团队行为不可逆，确定解散请发送“确认解散 {team_id}”"
+
+
+def transfer(user_id, team_id, index_str):
+    """转让"""
+    team_info = db.j3_teams.find_one({"_id": team_id})
+    team_members = team_info["team_members"]
+    res, index_x, index_y = index_in_list(index_str, team_members)
+    if not res:
+        return False, "位置不存在"
+    user = team_members[index_x][index_y]
+    if not user:
+        return False, "该位置上没有人"
+    transfer_user_id = user["user_id"]
+    transfer_user_name = user["user_name"]
+    if transfer_user_id == user_id:
+        return False, "不可以转让给自己"
+    db.j3_teams.update_one({"_id": team_id},
+                           {"$set": {
+                               "transfer_user_id": transfer_user_id
+                           }})
+    return True, f"是否要将团队转让给[{transfer_user_name}]？" \
+                 f"确定转让请发送“确认转让 {transfer_user_id}”"
+
+
 @disband_team.handle()
+async def _(event: GroupMessageEvent):
+    """解散团队"""
+    user_id = int(event.user_id)
+    text = event.get_plaintext()
+    team_id = re.findall(r" (\d+)", text)
+    if not team_id:
+        await disband_team.finish("正确格式为：“解散团队 团队序号”")
+    _, msg = disband(user_id, int(team_id[0]))
+    await disband_team.finish(msg)
+
+
+@confirm_disband_team.handle()
 async def _(event: GroupMessageEvent):
     """确认解散"""
     user_id = int(event.user_id)
@@ -132,15 +202,24 @@ async def _(event: GroupMessageEvent):
     for members in team_info["team_members"]:
         for member in members:
             if member:
-                db.user_info.update_one({"_id": member["user_id"]},
-                                        {"$set": {
-                                            "team": 0
-                                        }})
+                del_user_team(member["user_id"], member["user_name"], team_id)
     db.j3_teams.delete_one({"_id": team_id})
     await disband_team.finish("成功解散团队")
 
 
 @transfer_team.handle()
+async def _(event: GroupMessageEvent):
+    user_id = int(event.user_id)
+    text = event.get_plaintext()
+    content = re.findall(r" (\d+)", text)
+    if len(content) == 2:
+        await disband_team.finish("正确格式为：“转让团队 团队序号 接收人坐标”")
+    team_id, index_str = content
+    _, msg = transfer(user_id, int(team_id), index_str)
+    await disband_team.finish(msg)
+
+
+@confirm_transfer_team.handle()
 async def _(event: GroupMessageEvent):
     user_id = int(event.user_id)
     text = event.get_plaintext()
@@ -168,39 +247,81 @@ async def _(event: GroupMessageEvent):
     await transfer_team.finish("团队转让成功")
 
 
-@bind_user.handle()
+@user_manage.handle()
 async def _(event: GroupMessageEvent):
-    # 角色名称 心法 服务器(选填) 邮箱(选填)
+    # 角色名称 心法 服务器(选填)
     user_id = int(event.user_id)
     text = event.get_plaintext()
-    help_msg = "绑定角色 角色名称 心法 服务器(选填) 邮箱(选填)"
-    if text == "绑定角色":
-        await bind_user.finish(help_msg)
+    user_info = db.user_info.find_one({"_id": user_id})
+    if text == "角色管理":
+        # 返回当前所有角色
+        if not user_info.get("user_data"):
+            await user_manage.finish(
+                "你还没有绑定过任何角色, 请发送以下命令进行绑定:\n角色管理 角色名称 心法 服务器(选填)")
+        msg = "\n".join([
+            f"{'[默认] ' if k == user_info['default_user']  else ''}{k} {v['profession']} {v['server']}"
+            for k, v in user_info.get("user_data").items()
+        ])
+        await user_manage.finish(msg)
+    del_user = re.findall(r" -([\u4e00-\u9fa5]{2,8})", text)
+    if del_user:
+        for user in del_user:
+            if user not in user_info.get("user_data", {}):
+                await user_manage.finish(f"{user}不存在，无法删除")
+            # 团队中的角色无法删除
+            if user_info.get("teams").get(user):
+                continue
+            del user_info.get("user_data")[user]
+            del user_info.get("teams")[user]
+            db.user_info.update_one({"_id": user_id}, {"$set": user_info})
+        await user_manage.finish("删除角色成功")
+
+    default_user = re.findall(r" [！!]([\u4e00-\u9fa5]{2,8})", text)
+    if default_user:
+        default_user_name = default_user[-1]
+        if default_user_name not in user_info.get("user_data", {}):
+            await user_manage.finish(f"{default_user_name}不存在，无法设为默认角色")
+        db.user_info.update_one({"_id": user_id},
+                                {"$set": {
+                                    "default_user": default_user_name
+                                }})
+        await user_manage.finish(f"默认角色变更为: {default_user_name}")
+    # 添加或修改角色
     text_list = text.split()
     text_len = len(text_list)
     if text_len < 3:
-        await bind_user.finish(help_msg)
-    if not content_check(text_list[1])[0]:
-        await bind_user.finish("你的名字能过审?我不信！你快改一下吧")
+        await user_manage.finish("正确的命令格式：“角色管理 角色名称 心法 服务器(选填)”")
+    user_name = text_list[1]
+    if not content_check(user_name)[0]:
+        await user_manage.finish("这个名字能过审?我不信！你快改一下吧")
     profession = JX3PROFESSION.get_profession(text_list[2])
     if not profession:
-        await bind_user.finish("找不到你写的心法，换个写法再来一次吧")
-    data = {"user_name": text_list[1], "profession": profession}
+        await user_manage.finish("找不到你写的心法，换个写法再来一次吧")
+
+    if not user_info.get("user_data"):
+        user_info["user_data"] = {}
+        user_info["teams"] = {}
+        user_info["default_user"] = user_name
+    if user_name not in user_info["user_data"]:
+        user_info["user_data"][user_name] = {}
+        user_info["teams"][user_name] = []
     if text_len > 3:
-        data["server"] = text_list[3]
+        server = await jx3_searcher.get_server(text_list[3])
+        if not server:
+            await user_manage.finish("你的服务器写错了吧，我只认全称！黑话我听不懂！")
     else:
         group_id = int(event.group_id)
         server = db.group_conf.find_one({"_id": group_id}).get("server")
-        if server:
-            data["server"] = server
-        else:
-            await bind_user.finish("本群未绑定服务器, 请自己写上服务器全称")
-    email = re.findall(r"\w+@\w+\.[a-z]{2,8}", text)
-    if email:
-        data["email"] = email[0]
-    db.user_info.update_one({"_id": user_id}, {"$set": data}, True)
-    msg = "绑定成功!\n" + "\n".join(data.values())
-    await bind_user.finish(msg)
+        if not server:
+            await user_manage.finish("本群未绑定服务器, 请自己写上服务器全称")
+
+    user_info["user_data"][user_name] = {
+        "profession": profession,
+        "server": server
+    }
+    db.user_info.update_one({"_id": user_id}, {"$set": user_info}, True)
+    msg = "设置成功!"
+    await user_manage.finish(msg)
 
 
 @create_team.handle()
@@ -212,13 +333,12 @@ async def _(bot: Bot, event: GroupMessageEvent):
     text = event.get_plaintext()
 
     user_info = db.user_info.find_one({"_id": user_id})
-    team_leader_name = user_info.get("user_name")
+    team_leader_name = user_info.get("default_user")
     if not team_leader_name:
         await create_team.finish(
-            "你都没绑定过角色，还想开团？赶紧绑定角色吧\n发送“绑定角色 角色名称 心法 服务器(选填) 邮箱(选填)”")
-    user_team = user_info.get("team")
-    if user_team:
-        await create_team.finish(f"你已经有一个团了，编号：{user_team}")
+            "你都没绑定过角色，还想开团？赶紧绑定角色吧\n发送“角色管理 角色名称 心法 服务器(选填)”")
+    user_data = user_info["user_data"][team_leader_name]
+
     create_time = datetime.now()
     meeting_time_str = re.findall(
         r"[0-1]{0,1}\d-[0-3]{0,1}\d [0-6]{0,1}\d[:：][0-6]{0,1}\d", text)
@@ -233,8 +353,8 @@ async def _(bot: Bot, event: GroupMessageEvent):
             await create_team.finish("不可以用过去的时间")
         if time_difference.seconds < 1800:
             await create_team.finish("至少预留30分钟准备时间吧")
-        if time_difference.days > 3:
-            await create_team.finish("集合时间只能预约3天以内")
+        if time_difference.days > 10:
+            await create_team.finish("集合时间只能预约10天以内")
     else:
         meeting_time = create_time + timedelta(hours=2)
 
@@ -243,7 +363,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
     if server:
         server = server[0]
     else:
-        server = user_info.get("server")
+        server = user_data.get("server")
     if not server:
         server = db.group_conf.find_one({"_id": group_id}).get("server")
     if not server:
@@ -263,7 +383,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
     team_conf = re.findall(r" [\[【](.+?)[】\]]", text)
     team_configuration = {"人数": 25}
     if team_conf:
-        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5})|([DTHB])(\d{1,2})",
+        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5}|[DTHB])(\d{1,2})",
                                     team_conf[0])
         for k, v in team_conf_list:
             if k in conf_list:
@@ -273,19 +393,19 @@ async def _(bot: Bot, event: GroupMessageEvent):
                 if profession:
                     team_configuration[profession] = int(v)
 
-    if user_info['profession'] in JX3PROFESSION_ROLE.坦克.value:
-        user_info['role'] = "坦克"
-    elif user_info['profession'] in JX3PROFESSION_ROLE.治疗.value:
-        user_info['role'] = "治疗"
+    if user_data['profession'] in JX3PROFESSION_ROLE.坦克.value:
+        user_data['role'] = "坦克"
+    elif user_data['profession'] in JX3PROFESSION_ROLE.治疗.value:
+        user_data['role'] = "治疗"
     else:
-        user_info['role'] = "输出"
+        user_data['role'] = "输出"
     team_leader_info = {
-        "user_name": user_info['user_name'],
+        "user_name": team_leader_name,
         "user_id": user_info['_id'],
         "group_id": group_id,
         "bot_id": bot_id,
-        "profession": user_info['profession'],
-        "role": user_info["role"]
+        "profession": user_data['profession'],
+        "role": user_data["role"]
     }
     team_members = [
         [team_leader_info, {}, {}, {}, {}],
@@ -310,7 +430,11 @@ async def _(bot: Bot, event: GroupMessageEvent):
         "need_notice": True
     }
     team_id = db.insert_auto_increment("j3_teams", insert_data)
-    db.user_info.update_one({"_id": user_id}, {"$set": {"team": team_id}})
+    user_teams = user_info.get("teams", {})
+    if team_leader_name not in user_teams:
+        user_teams[team_leader_name] = []
+    user_teams[team_leader_name].append(team_id)
+    db.user_info.update_one({"_id": user_id}, {"$set": {"teams": user_teams}})
 
     msg = f"开团成功\n团队编号：{team_id}\n团长：{team_leader_name}\n" \
           f"开团时间：{create_time.strftime('%Y-%m-%d %H:%M:%S')}\n服务器：{server}\n"\
@@ -327,6 +451,18 @@ def index_in_list(index, team_announcements):
     if len(team_announcements[index_x]) <= index_y:
         return False, 0, 0
     return True, index_x, index_y
+
+
+def del_user_team(user_id, user_name, team_id):
+    """删除用户信息表中的对应的团队"""
+    user_info = db.user_info.find_one({"_id": user_id})
+    user_teams = user_info["teams"]
+    if team_id in user_teams[user_name]:
+        user_teams[user_name].remove(team_id)
+        db.user_info.update_one({"_id": user_id},
+                                {"$set": {
+                                    "teams": user_teams
+                                }})
 
 
 @set_team.handle()
@@ -350,40 +486,30 @@ async def _(event: GroupMessageEvent):
       集合时间: 月-日 时:分
     """
     user_id = int(event.user_id)
-    team_id = db.user_info.find_one({"_id": user_id}).get("team")
     text = event.get_plaintext()
+    team_id = re.findall(r" (\d+) ", text)
     if not team_id:
-        await set_team.finish("你没加入任何团队")
+        await set_team.finish("输入的格式不对，需要指定团队序号。")
+    team_id = int(team_id[0])
     team_info = db.j3_teams.find_one({"_id": team_id})
-    team_members = team_info["team_members"]
-    if team_info["user_id"] != user_id:
+    if not team_info:
+        await set_team.finish("团队不存在，请发送“团队信息”进行查看")
+    user_info = db.user_info.find_one({"_id": user_id})
+    team_leader_name = team_info.get("team_leader_name")
+    if team_info.get(
+            "user_id"
+    ) != user_id or team_leader_name not in user_info["teams"]:
         await set_team.finish("你不是团长，不能调整团队")
+    team_members = team_info["team_members"]
     disband_the_team = re.findall(r" ([!！]解散)", text)
     if disband_the_team:
-        db.j3_teams.update_one({"_id": team_id},
-                               {"$set": {
-                                   "is_disband": True
-                               }})
-        await set_team.finish(f"解散团队行为不可逆，确定解散请发送“确认解散 {team_id}”")
+        _, msg = disband(user_id, team_id)
+        await disband_team.finish(msg)
     transfer_team = re.findall(r" [!！]转让([1-5]{2})", text)
     if transfer_team:
         transfer_index = transfer_team[-1]
-        res, index_x, index_y = index_in_list(transfer_index, team_members)
-        if not res:
-            await set_team.finish("位置不存在")
-        user = team_members[index_x][index_y]
-        if not user:
-            await set_team.finish("该位置上没有人")
-        transfer_user_id = user["user_id"]
-        transfer_user_name = user["user_name"]
-        if transfer_user_id == user_id:
-            await set_team.finish("不可以转让给自己")
-        db.j3_teams.update_one(
-            {"_id": team_id}, {"$set": {
-                "transfer_user_id": transfer_user_id
-            }})
-        await set_team.finish(f"是否要将团队转让给[{transfer_user_name}]？" \
-                              f"确定转让请发送“确认转让 {transfer_user_id}”")
+        _, msg = transfer(user_id, team_id, transfer_index)
+        await disband_team.finish(msg)
 
     msg = ""
 
@@ -414,9 +540,11 @@ async def _(event: GroupMessageEvent):
             if not res:
                 continue
             member_id = team_members[index_x][index_y]["user_id"]
-            if member_id == user_id:
-                msg += "\n不可以踢自己，如果想要解散团队请发送“调整团队 !解散”"
+            member_name = team_members[index_x][index_y]["user_name"]
+            if member_id == user_id and member_name == team_leader_name:
+                msg += "\n不可以踢自己的团长角色，如果想要解散团队请发送“调整团队 !解散”"
                 continue
+            del_user_team(user_id, member_name, team_id)
             team_members[index_x][index_y] = {}
             db.user_info.update_one({"_id": member_id}, {"$set": {"team": 0}})
 
@@ -452,7 +580,8 @@ async def _(event: GroupMessageEvent):
             msg = "\n服务器写的不对"
     team_conf = re.findall(r" [\[【](.+?)[】\]]", text)
     if team_conf:
-        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5}|[DTHB])(\d{1,2})", team_conf[0])
+        team_conf_list = re.findall(r"([\u4e00-\u9fa5]{2,5}|[DTHB])(\d{1,2})",
+                                    team_conf[0])
         for k, v in team_conf_list:
             if k in conf_list:
                 team_info["team_configuration"][conf_list[k]] = int(v)
@@ -473,8 +602,8 @@ async def _(event: GroupMessageEvent):
             msg += "不可以用过去的时间"
         elif time_difference.seconds < 1800:
             msg += "至少预留30分钟准备时间吧"
-        elif time_difference.days > 3:
-            msg += "集合时间只能预约3天以内"
+        elif time_difference.days > 10:
+            msg += "集合时间只能预约10天以内"
         else:
             team_info["meeting_time"] = meeting_time
     db.j3_teams.update_one({"_id": team_id}, {"$set": team_info})
@@ -520,22 +649,46 @@ async def _(event: GroupMessageEvent):
     text_list = text.split()
     if len(text_list) == 2:
         team_id = int(text_list[-1])
+        team_info = db.j3_teams.find_one({"_id": team_id})
+        if not team_info:
+            await view_team.finish("你没加入任何团队")
+        team_info["team_configuration"] = get_time_conf(team_info)
+        datas = []
+        for i, data in enumerate(zip(*team_info["team_members"])):
+            datas.append({"index": i + 1, "data": data})
+        team_info["team_members"] = datas
+        team_info["meeting_time"] = team_info["meeting_time"].strftime(
+            "%Y-%m-%d %H:%M")
+        pagename = "view_team.html"
+        img = await browser.template_to_image(pagename=pagename,
+                                              team_info=team_info)
+        await view_team.finish(MessageSegment.image(img))
     else:
-        team_id = db.user_info.find_one({"_id": user_id}).get("team")
-    team_info = db.j3_teams.find_one({"_id": team_id})
-    if not team_info:
-        await view_team.finish("你没加入任何团队")
-    team_info["team_configuration"] = get_time_conf(team_info)
-    datas = []
-    for i, data in enumerate(zip(*team_info["team_members"])):
-        datas.append({"index": i + 1, "data": data})
-    team_info["team_members"] = datas
-    team_info["meeting_time"] = team_info["meeting_time"].strftime(
-        "%Y-%m-%d %H:%M")
-    pagename = "view_team.html"
-    img = await browser.template_to_image(pagename=pagename,
-                                          team_info=team_info)
-    await view_team.finish(MessageSegment.image(img))
+        user_info = db.user_info.find_one({"_id": user_id})
+        user_teams = user_info.get("teams", {})
+        datas = []
+        for user_name, teams in user_teams.items():
+            for team_id in teams:
+                team_info = db.j3_teams.find_one({"_id": team_id})
+                datas.append({
+                    "user_name":
+                    user_name,
+                    "profession":
+                    user_info["user_data"][user_name]["profession"],
+                    "team_id":
+                    team_id,
+                    "server":
+                    team_info["server"],
+                    "meeting_time":
+                    team_info["meeting_time"].strftime("%Y-%m-%d %H:%M"),
+                    "team_announcements":
+                    team_info["team_announcements"][:8]
+                })
+        if not datas:
+            await view_team.finish("你没有加入过任何团队")
+        pagename = "view_team_list.html"
+        img = await browser.template_to_image(pagename=pagename, datas=datas)
+        await view_team.finish(MessageSegment.image(img))
 
 
 @search_team.handle()
@@ -654,52 +807,50 @@ async def _(bot: Bot, event: GroupMessageEvent):
     group_id = int(event.group_id)
     bot_id = int(bot.self_id)
     user_info = db.user_info.find_one({"_id": user_id})
-    if not user_info.get("user_name"):
-        await register.finish("你还没有绑定角色：\n发送“绑定角色 角色名称 心法 服务器(选填) 邮箱(选填)”")
-    user_team = user_info.get("team")
-    if user_team:
-        await register.finish(f"你已经有一个团了，编号：{user_team}")
     text = event.get_plaintext()
     text_list = text.split()
-    register_info = text_list[-1]
-    if register_info.isdigit():
-        team_id = int(register_info)
-        j3_teams = db.j3_teams.find_one({"_id": team_id})
+    team_id = int(text_list[-1])
+    default_user = user_info.get("default_user")
+    if not default_user:
+        await register.finish("你还没有绑定角色：\n发送“角色管理 角色名称 心法 服务器(选填)”")
+    if len(text_list) == 3:
+        user_name = text_list[1]
     else:
-        j3_teams = db.j3_teams.find_one({"team_leader_name": register_info})
+        user_name = default_user
+    teams = user_info["teams"]
+    if team_id in teams.get(user_name, []):
+        await register.finish(f"你已经在该团队中了，可以发送“查看团队 {team_id}”进行查看")
+
+    j3_teams = db.j3_teams.find_one({"_id": team_id})
+
     if not j3_teams:
         await register.finish("没有找到这个团队")
     if not j3_teams.get("registration_switch"):
         await register.finish("该团队已停止报名")
-    if not (j3_teams.get("public_switch") or j3_teams.get("group_id") != group_id):
+    if not (j3_teams.get("public_switch")
+            or j3_teams.get("group_id") != group_id):
         await register.finish("该团队没有公开报名")
-    user_info["group_id"] = group_id
-    user_info["bot_id"] = bot_id
-    if len(text_list) == 3:
-        tmp_profession = JX3PROFESSION.get_profession(text_list[1])
-        if tmp_profession:
-            user_info['profession'] = tmp_profession
+    user_data = user_info["user_data"][user_name]
+    user_data["group_id"] = group_id
+    user_data["bot_id"] = bot_id
+    user_data["user_name"] = user_name
+    user_data["_id"] = user_info["_id"]
 
-    if len(text_list) == 3 and text_list[1] == "老板":
-        user_info['role'] = "老板"
-        user_info['profession'] += "老板"
-    elif user_info['profession'] in JX3PROFESSION_ROLE.坦克.value:
-        user_info['role'] = "坦克"
-    elif user_info['profession'] in JX3PROFESSION_ROLE.治疗.value:
-        user_info['role'] = "治疗"
+    if user_data['profession'] in JX3PROFESSION_ROLE.坦克.value:
+        user_data['role'] = "坦克"
+    elif user_data['profession'] in JX3PROFESSION_ROLE.治疗.value:
+        user_data['role'] = "治疗"
     else:
-        user_info['role'] = "输出"
+        user_data['role'] = "输出"
 
-    res, data = check_team_leader_name(user_info, j3_teams)
+    res, data = check_team_leader_name(user_data, j3_teams)
     if res:
         db.j3_teams.update_one({"_id": j3_teams["_id"]},
                                {"$set": {
                                    "team_members": data
                                }})
-        db.user_info.update_one({"_id": user_id},
-                                {"$set": {
-                                    "team": j3_teams["_id"]
-                                }})
+        teams[user_name].append(j3_teams["_id"])
+        db.user_info.update_one({"_id": user_id}, {"$set": {"teams": teams}})
         await register.finish("报名成功！")
     else:
         await register.finish(data)

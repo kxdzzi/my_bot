@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <style type="text/css">
+        @font-face{
+            font-family:youai;
+            src:url('font/youai.ttf');
+        }
+        #main{
+            font-family: youai;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card" style="width:750px;padding:10px; background-image: url('img/bg.png');" id="main">
+        <h2 align="center">团队信息</h2><br>
+        <table class="table table-sm table-bordered" style="border: 1px solid rgb(73, 69, 69)" align="center">
+            <thead>
+                <tr>
+                    <td align="center" style="width: 100px" scope="col">角色名称</td>
+                    <td align="center" style="width: 50px" scope="col">心法</td>
+                    <td align="center" style="width: 80px" scope="col">服务器</td>
+                    <td align="center" style="width: 50px" scope="col">团队序号</td>
+                    <td align="center" style="width: 100px" scope="col">集合时间</td>
+                    <td align="center" style="width: 100px" scope="col">团队公告</td>
+                </tr>
+            </thead>
+            <tbody>
+                {% for data in datas %}
+                <tr>
+                    <td align="center" scope="col">{{data.user_name}}</th>
+                    <td align="center" scope="col">{{data.profession}}</th>
+                    <td align="center" scope="col">{{data.server}}</th>
+                    <td align="center">{{data.team_id}}</th>
+                    <td align="center" scope="col">{{data.meeting_time}}</th>
+                    <td align="center" scope="col">{{data.team_announcements}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>
