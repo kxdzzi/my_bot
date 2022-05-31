@@ -15,8 +15,7 @@ from src.utils.utils import bot_info
 
 
 async def _is_tome(bot: Bot, event: GroupMessageEvent) -> bool:
-    print(bot_info.bot_name_map)
-    bot_name = bot_info.bot_name_map[int(bot.self_id())]
+    bot_name = bot_info.bot_name_map[int(bot.self_id)]
     return event.get_plaintext().startswith(bot_name) or event.is_tome()
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)

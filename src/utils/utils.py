@@ -26,7 +26,7 @@ class BotInfo():
     def __new__(cls, *args, **kwargs):
         '''单例'''
         if not hasattr(cls, '_instance'):
-            orig = super(DB, cls)
+            orig = super(BotInfo, cls)
             cls._instance = orig.__new__(cls, *args, **kwargs)
         return cls._instance
 

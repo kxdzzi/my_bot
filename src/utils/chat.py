@@ -20,7 +20,7 @@ async def chat(msg, nickname="二猫子"):
         clientProfile = ClientProfile()
         clientProfile.httpProfile = httpProfile
         client = nlp_client.NlpClient(cred, "ap-guangzhou", clientProfile)
-        msg = msg.replace(nickname, "腾讯小龙女")
+        msg = msg.replace(nickname, "")
         req = models.ChatBotRequest()
         params = {"Query": str(msg)}
         req.from_json_string(json.dumps(params))
