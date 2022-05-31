@@ -65,6 +65,8 @@ async def register_bot(bot: Bot):
 
     ret = await bot.get_stranger_info(user_id=bot_id, no_cache=False)
     bot_name = ret['nickname']
+    global BOT_NAME_MAP
+    BOT_NAME_MAP[bot_id] = bot_name
     db.bot_info.update_one({"_id": bot_id}, {
         "$set": {
             "online_status": True,

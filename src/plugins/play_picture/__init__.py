@@ -6,11 +6,17 @@ from nonebot import export, on_message, on_regex
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.adapters.onebot.v11.permission import GROUP
-from nonebot.rule import to_me
+from nonebot.rule import Rule
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from src.utils.chat import chat
 from src.utils.db import db
 from tortoise import os
+
+global BOT_NAME_MAP
+
+async def _is_tome(bot: Bot, event: Event) -> bool:
+    bot_name = BOT_NAME_MAP[int(bot.self_id())]
+    return event.get_plaintext().startswith(bot_name) or event.is_tome()
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -32,7 +38,7 @@ xz_xia = on_regex(r"^.{0,5}(虾|🦞|🦐)+.{0,5}$",
                   priority=5,
                   block=True)
 
-ermaozi = on_message(rule=to_me(), permission=GROUP, priority=10, block=True)
+ermaozi = on_message(rule=Rule(_is_tome), permission=GROUP, priority=10, block=True)
 
 
 @yellow.handle()

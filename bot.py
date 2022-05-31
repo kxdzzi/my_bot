@@ -7,6 +7,9 @@ from nonebot.adapters.onebot.v11 import Adapter
 from src.utils.moinkeypath import monkeypatch
 from src.utils.scheduler import start_scheduler
 
+global BOT_NAME_MAP
+BOT_NAME_MAP = {}
+
 # 猴子补丁，针对windows平台，更换事件循环
 monkeypatch()
 nonebot.init()
