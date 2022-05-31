@@ -14,7 +14,7 @@ from tortoise import os
 
 global BOT_NAME_MAP
 
-async def _is_tome(bot: Bot, event: Event) -> bool:
+async def _is_tome(bot: Bot, event: GroupMessageEvent) -> bool:
     bot_name = BOT_NAME_MAP[int(bot.self_id())]
     return event.get_plaintext().startswith(bot_name) or event.is_tome()
 
