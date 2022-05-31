@@ -4,6 +4,7 @@ import time
 from nonebot import Bot
 from nonebot.plugin import get_loaded_plugins
 from src.utils.db import db
+from src.utils.utils import bot_info
 from . import _jx3_event as Event
 
 
@@ -65,8 +66,8 @@ async def register_bot(bot: Bot):
 
     ret = await bot.get_stranger_info(user_id=bot_id, no_cache=False)
     bot_name = ret['nickname']
-    global BOT_NAME_MAP
-    BOT_NAME_MAP[bot_id] = bot_name
+    bot_info.bot_name_map[bot_id] = bot_name
+    print(bot_info.bot_name_map)
     db.bot_info.update_one({"_id": bot_id}, {
         "$set": {
             "online_status": True,

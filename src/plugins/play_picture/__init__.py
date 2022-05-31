@@ -11,11 +11,12 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from src.utils.chat import chat
 from src.utils.db import db
 from tortoise import os
+from src.utils.utils import bot_info
 
-global BOT_NAME_MAP
 
 async def _is_tome(bot: Bot, event: GroupMessageEvent) -> bool:
-    bot_name = BOT_NAME_MAP[int(bot.self_id())]
+    print(bot_info.bot_name_map)
+    bot_name = bot_info.bot_name_map[int(bot.self_id())]
     return event.get_plaintext().startswith(bot_name) or event.is_tome()
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
