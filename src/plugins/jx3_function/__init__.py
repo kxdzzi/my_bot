@@ -2,6 +2,7 @@ import math
 import re
 from datetime import datetime, timedelta
 from enum import Enum
+from copy import deepcopy
 
 from nonebot import export, on_regex
 from nonebot.adapters.onebot.v11 import Bot
@@ -667,22 +668,21 @@ async def _(event: GroupMessageEvent):
         user_info = db.user_info.find_one({"_id": user_id})
         user_teams = user_info.get("teams", {})
         datas = []
+        tmp_user_teams = deepcopy(user_teams)
         for user_name, teams in user_teams.items():
             for team_id in teams:
                 team_info = db.j3_teams.find_one({"_id": team_id})
+                if not team_info:
+                    tmp_user_teams[user_name].remove(team_id)
+                    db.user_info.update_one({"_id": user_id}, {"$set": {"teams": tmp_user_teams}})
+                    continue
                 datas.append({
-                    "user_name":
-                    user_name,
-                    "profession":
-                    user_info["user_data"][user_name]["profession"],
-                    "team_id":
-                    team_id,
-                    "server":
-                    team_info["server"],
-                    "meeting_time":
-                    team_info["meeting_time"].strftime("%Y-%m-%d %H:%M"),
-                    "team_announcements":
-                    team_info["team_announcements"][:8]
+                    "user_name": user_name,
+                    "profession": user_info["user_data"][user_name]["profession"],
+                    "team_id": team_id,
+                    "server": team_info["server"],
+                    "meeting_time": team_info["meeting_time"].strftime("%Y-%m-%d %H:%M"),
+                    "team_announcements": team_info["team_announcements"][:8]
                 })
         if not datas:
             await view_team.finish("你没有加入过任何团队")

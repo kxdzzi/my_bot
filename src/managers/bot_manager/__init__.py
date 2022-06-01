@@ -77,6 +77,17 @@ async def pull_off_shelves():
         logger.error(f"下架商品失败: {str(e)}")
 
 
+def del_user_team(user_id, user_name, team_id):
+    """删除用户信息表中的对应的团队"""
+    user_info = db.user_info.find_one({"_id": user_id})
+    user_teams = user_info["teams"]
+    if team_id in user_teams[user_name]:
+        user_teams[user_name].remove(team_id)
+        db.user_info.update_one({"_id": user_id},
+                                {"$set": {
+                                    "teams": user_teams
+                                }})
+
 async def disband_team():
     meeting_time = datetime.now() - timedelta(minutes=60)
     team_infos = db.j3_teams.find({"meeting_time": {"$lte": meeting_time}})
@@ -86,9 +97,7 @@ async def disband_team():
         for members in team_info["team_members"]:
             for member in members:
                 if member:
-                    db.user_info.update_one(
-                        {"_id": member["user_id"]},
-                        {"$set": {"team": 0}})
+                    del_user_team(member["user_id"], member["user_name"], team_id)
         db.j3_teams.delete_one({"_id": team_id})
 
 
