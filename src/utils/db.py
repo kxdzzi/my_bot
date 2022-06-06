@@ -58,6 +58,8 @@ class DB():
         self.pk_log = self.db.pk_log
         # 剑三团队
         self.j3_teams = self.db.j3_teams
+        # 表情包
+        self.memes = self.db.memes
 
         # 计数器
         self.counters = self.db.counters
