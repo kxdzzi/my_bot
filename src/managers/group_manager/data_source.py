@@ -306,6 +306,7 @@ async def play_picture(bot: Bot, event: GroupMessageEvent, group_id):
             logger.debug(f"<y>群({group_id})</y> | 搭话 | {msg}")
         else:
             memes = db.memes.aggregate([{"$sample": {"size": 1}}])
+            logger.debug(f"<y>群({group_id})</y> | 斗图")
             for meme in memes:
                 url = meme.get("url")
                 async with AsyncClient() as client:
