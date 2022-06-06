@@ -305,10 +305,9 @@ async def play_picture(bot: Bot, event: GroupMessageEvent, group_id):
             msg = await chat(content)
             logger.debug(f"<y>群({group_id})</y> | 搭话 | {msg}")
         else:
-            cat_dir = os.path.join(data_dir, "img", "cat")
-            img_name = random.choice(os.listdir(cat_dir))
-            img_path = os.path.join(cat_dir, img_name)
-            logger.debug(f"<y>群({group_id})</y> | 斗图 | {img_path}")
-            with open(img_path, "rb") as f:
-                msg = MessageSegment.image(f.read())
+            meme = db.memes.aggregate([{"$sample": {size: 1}}])
+            url = meme.get("url")
+            async with AsyncClient() as client:
+                req = await client.get(url=url)
+                msg = MessageSegment.image(req.content)
         await bot.send_group_msg(group_id=group_id, message=msg)
