@@ -33,17 +33,6 @@ async def _(bot: Bot, event: PrivateMessageEvent):
     await activation.finish(msg)
 
 
-async def remove_group_conf():
-    """删除10天未发言的群记录"""
-    logger.info("删除10天未发言的群记录")
-    db.group_conf.delete_many({
-        'last_sent': {
-            "$lte": datetime.today() + timedelta(days=-3)
-        }
-    })
-    logger.info("重置群完成")
-
-
 async def archive_river_lantern():
     """河灯归档"""
     logger.info("河灯归档")
@@ -153,7 +142,6 @@ async def _():
     '''每天4点开始偷偷的干活'''
 
     if config.node_info.get("node") == config.node_info.get("main"):
-        await remove_group_conf()
         await archive_river_lantern()
         await pull_off_shelves()
 

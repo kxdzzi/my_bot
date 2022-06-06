@@ -133,8 +133,6 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
         "sent_time": sent_time,
         "message": message
     })
-    if not db.group_conf.find_one({"_id": group_id}).get("group_switch"):
-        return
     # 记录群最后发言时间
     db.group_conf.update_one({
         "_id": group_id,

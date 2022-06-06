@@ -1,10 +1,13 @@
-from datetime import datetime
-from src.utils.config import config
 import time
+from datetime import datetime
+
 from nonebot import Bot
 from nonebot.plugin import get_loaded_plugins
+from src.utils.black_list import check_black_list
+from src.utils.config import config
 from src.utils.db import db
 from src.utils.utils import bot_info
+
 from . import _jx3_event as Event
 
 
@@ -37,22 +40,13 @@ async def load_plugins(group_id: int):
 
 
 async def check_group(group_id: int, bot: Bot):
-    """检查群是否活跃"""
+    """检查群是否在黑名单"""
     if group_id in config.bot_conf.get("manage_group", []):
         return
-    con = db.group_conf.find_one({"_id": group_id})
-    last_sent = None
-    if con:
-        last_sent = con.get("last_sent")
-    if not last_sent:
-        db.group_conf.update_one({
-            "_id": group_id,
-        }, {"$set": {
-            "last_sent": datetime.now()
-        }}, True)
-        return
-    if (datetime.now() - last_sent).days > 5:
-        msg = "都五天没人跟我玩了，我还是走了吧。盈尺江湖，有缘再会！"
+
+    is_black, info = check_black_list(group_id, "群号")
+    if is_black:
+        msg = f"好家伙，这个群被拉黑了。原因是：{info}"
         db.group_conf.update_one({'_id': group_id}, {'$set': {
             "bot_id": 0
         }}, True)
@@ -67,7 +61,6 @@ async def register_bot(bot: Bot):
     ret = await bot.get_stranger_info(user_id=bot_id, no_cache=False)
     bot_name = ret['nickname']
     bot_info.bot_name_map[bot_id] = bot_name
-    print(bot_info.bot_name_map)
     db.bot_info.update_one({"_id": bot_id}, {
         "$set": {
             "online_status": True,
