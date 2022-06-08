@@ -824,6 +824,9 @@ async def _(bot: Bot, event: GroupMessageEvent):
         if not profession:
             await register.finish("找不到你写的心法，换个写法再来一次吧")
         server = db.group_conf.find_one({"_id": group_id}).get("server")
+        if user_name not in user_info["user_data"]:
+            user_info["user_data"][user_name] = {}
+            user_info["teams"][user_name] = []
         user_info["user_data"][user_name] = {
             "profession": profession,
             "server": server
