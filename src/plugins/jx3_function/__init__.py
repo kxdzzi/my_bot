@@ -866,6 +866,7 @@ async def _(bot: Bot, event: GroupMessageEvent):
                                }})
         teams[user_name].append(j3_teams["_id"])
         db.user_info.update_one({"_id": user_id}, {"$set": {"teams": teams}})
-        await register.finish("报名成功！"+msg)
+        msg = "报名成功！" + msg
+        await register.finish(msg)
     else:
         await register.finish(data)
