@@ -813,8 +813,23 @@ async def _(bot: Bot, event: GroupMessageEvent):
     default_user = user_info.get("default_user")
     if not default_user:
         await register.finish("你还没有绑定角色：\n发送“角色管理 角色名称 心法 服务器(选填)”")
+    msg = ""
     if len(text_list) == 3:
         user_name = text_list[1]
+    elif len(text_list) == 4:
+        user_name = text_list[1]
+        if not content_check(user_name)[0]:
+            await register.finish("这个名字能过审?我不信！你快改一下吧")
+        profession = JX3PROFESSION.get_profession(text_list[2])
+        if not profession:
+            await register.finish("找不到你写的心法，换个写法再来一次吧")
+        server = db.group_conf.find_one({"_id": group_id}).get("server")
+        user_info["user_data"][user_name] = {
+            "profession": profession,
+            "server": server
+        }
+        db.user_info.update_one({"_id": user_id}, {"$set": user_info}, True)
+        msg = f"为你更新了角色[{user_name}]，可以发送“角色管理”进行查看，下次用该角色报名就不用写心法了。"
     else:
         user_name = default_user
     teams = user_info["teams"]
@@ -851,6 +866,6 @@ async def _(bot: Bot, event: GroupMessageEvent):
                                }})
         teams[user_name].append(j3_teams["_id"])
         db.user_info.update_one({"_id": user_id}, {"$set": {"teams": teams}})
-        await register.finish("报名成功！")
+        await register.finish("报名成功！"+msg)
     else:
         await register.finish(data)
