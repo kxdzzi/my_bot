@@ -2,7 +2,6 @@ import math
 import random
 import copy
 import re
-import os
 from datetime import datetime
 
 from nonebot.adapters.onebot.v11 import Bot
@@ -14,6 +13,7 @@ from nonebot.adapters.onebot.v11 import Message, MessageSegment
 from src.utils.db import db
 from src.utils.log import logger
 from src.utils.browser import browser
+from src.utils.email import mail_client
 from src.plugins.jianghu.shop import shop
 from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表
 from src.plugins.jianghu.jianghu import PK
@@ -67,7 +67,7 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
     return MessageSegment.image(img)
 
 
-async def bind_email(user_id, res):
+async def bind_email(res):
     if not res:
         return "输入错误"
     my_email = res[0]
@@ -75,9 +75,39 @@ async def bind_email(user_id, res):
     match = email_pattern.search(my_email)
     if not match:
         return "邮箱格式错误"
-    db.user_info.update_one({"_id": user_id}, {"$set": {"email": my_email}}, True)
-    return "邮箱绑定成功"
+    vcode = "".join(random.choices("1234567890", k=6))
+    db.client["management"]["verification_code"].update_one(
+        {"_id": my_email},
+        {"$set": {
+            "_id": my_email,
+            "verification_code": vcode,
+            "create_time": datetime.now()}}, True)
+    await mail_client.send_mail([my_email], "二猫子发来的验证码", f"<h1>{vcode}</h1><br>在群里发送“<code>确认绑定 {my_email} {vcode}</code>”就可以完成绑定了")
+    return f"验证邮件已发送至{my_email}, 请注意查收, 如果没收到就翻翻垃圾邮件"
 
+
+async def make_sure_bind_email(user_id, res):
+    if not len(res) != 2:
+        return "输入错误"
+    my_email = res[0]
+    email_pattern = re.compile(r"^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$")
+    match = email_pattern.search(my_email)
+    if not match:
+        return "邮箱格式错误"
+    verification_code = res[1]
+    now_time = datetime.now()
+    vcode = db.client["management"]["verification_code"].find_one_and_delete(
+        {
+            "_id": my_email,
+            "verification_code": verification_code,
+            "create_time": {
+                "$gte": now_time + datetime.timedelta(minutes=-30)
+            }
+        })
+    if not vcode:
+        return "绑定失败：验证码错误或已过期"
+    db.user_info.update_one({"_id": user_id}, {"$set": {"email": my_email}}, True)
+    return "绑定成功！"
 
 async def set_name(user_id, res):
     if not res:

@@ -136,6 +136,7 @@ dungeon_progress = on_regex(r"^秘境进度$",
                             block=True)
 
 bind_email = on_regex(r"^绑定邮箱 .+$", permission=GROUP, priority=5, block=True)
+make_sure_bind_email = on_regex(r"^确认绑定 .+ \d{6}$", permission=GROUP, priority=5, block=True)
 
 
 def get_content(event: GroupMessageEvent) -> str:
@@ -147,9 +148,14 @@ def get_content(event: GroupMessageEvent) -> str:
 
 @bind_email.handle()
 async def _(event: GroupMessageEvent, res=Depends(get_content)):
-    user_id = event.user_id
-    msg = await source.bind_email(user_id, res)
+    msg = await source.bind_email(res)
     await bind_email.finish(msg)
+
+@make_sure_bind_email.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    user_id = event.user_id
+    msg = await source.make_sure_bind_email(user_id, res)
+    await make_sure_bind_email.finish(msg)
 
 @my_info.handle()
 async def _(event: GroupMessageEvent):
