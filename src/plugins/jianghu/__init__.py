@@ -151,11 +151,13 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     msg = await source.bind_email(res)
     await bind_email.finish(msg)
 
+
 @make_sure_bind_email.handle()
 async def _(event: GroupMessageEvent, res=Depends(get_content)):
     user_id = event.user_id
     msg = await source.make_sure_bind_email(user_id, res)
     await make_sure_bind_email.finish(msg)
+
 
 @my_info.handle()
 async def _(event: GroupMessageEvent):
