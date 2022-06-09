@@ -2,7 +2,7 @@ import math
 import random
 import copy
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from nonebot.adapters.onebot.v11 import Bot
 from src.plugins.jianghu.user_info import UserInfo
@@ -101,7 +101,7 @@ async def make_sure_bind_email(user_id, res):
             "_id": my_email,
             "verification_code": verification_code,
             "create_time": {
-                "$gte": now_time + datetime.timedelta(minutes=-30)
+                "$gte": now_time + timedelta(minutes=-30)
             }
         })
     if not vcode:
