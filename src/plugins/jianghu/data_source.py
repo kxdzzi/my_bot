@@ -82,7 +82,7 @@ async def bind_email(res):
             "_id": my_email,
             "verification_code": vcode,
             "create_time": datetime.now()}}, True)
-    await mail_client.send_mail([my_email], "二猫子发来的验证码", f"<h1>{vcode}</h1><br>在群里发送“<code>确认绑定 {my_email} {vcode}</code>”就可以完成绑定了")
+    await mail_client.send_mail([my_email], "二猫子发来的验证码", f"在群里发送“确认绑定 {my_email} {vcode}”就可以完成绑定了")
     return f"验证邮件已发送至{my_email}, 请注意查收, 如果没收到就翻翻垃圾邮件"
 
 

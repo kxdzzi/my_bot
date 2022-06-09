@@ -47,7 +47,7 @@ class MailClient(object):
         n = random.randint(1, 15)
         self._mail = f"{self._user}{n}@{self._domain}"
         text = mail_content
-        message = MIMEText(text, "html")
+        message = MIMEText(text)
         receiver_list = []
         for receiver in receivers:
             if isinstance(receiver, int):
