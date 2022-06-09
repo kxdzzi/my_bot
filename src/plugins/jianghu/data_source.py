@@ -87,7 +87,7 @@ async def bind_email(res):
 
 
 async def make_sure_bind_email(user_id, res):
-    if not len(res) != 2:
+    if len(res) != 2:
         return "输入错误"
     my_email = res[0]
     email_pattern = re.compile(r"^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$")
