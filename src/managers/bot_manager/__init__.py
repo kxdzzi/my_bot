@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot.adapters.onebot.v11.event import PrivateMessageEvent
+from nonebot.adapters.onebot.v11.permission import GROUP
 from nonebot.plugin import on_regex
 from src.plugins.jianghu.auction_house import 下架商品
 from src.utils.config import config
@@ -20,10 +21,12 @@ activation = on_regex(pattern=r"^激活$",
 set_instructions = on_regex(pattern=r"^修改使用说明 .+$",
                             priority=5,
                             block=True)
+
 instructions = on_regex(pattern=r"^使用说明$",
                         permission=GROUP,
                         priority=3,
                         block=True)
+
 
 @activation.handle()
 async def _(bot: Bot, event: PrivateMessageEvent):
@@ -39,6 +42,7 @@ async def _(bot: Bot, event: PrivateMessageEvent):
     msg = "激活成功!"
     await activation.finish(msg)
 
+
 @instructions.handle()
 async def _(bot: Bot):
     '''使用说明'''
@@ -50,7 +54,7 @@ async def _(bot: Bot):
     await instructions.finish(msg)
 
 
-@set_instructions.handel()
+@set_instructions.handle()
 async def _(bot: Bot, event: PrivateMessageEvent):
     '''修改使用说明'''
     user_id = event.user_id
@@ -63,6 +67,7 @@ async def _(bot: Bot, event: PrivateMessageEvent):
         {"_id": bot_id},
         {"$set": {"instructions": text}}, True)
     await set_instructions.finish("修改成功")
+
 
 async def archive_river_lantern():
     """河灯归档"""
