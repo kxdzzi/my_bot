@@ -47,6 +47,8 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
     if last_sign and today.date() == last_sign.date():
         suangua_data = _con.get("gua", {})
     gold = _con.get("gold", 0)
+    energy = _con.get("energy", 0)
+    contribution = _con.get("contribution", 0)
     jianghu_data = UserInfo(user_id)
     user_stat = jianghu_data.当前状态
     user_stat["当前气血"] = jianghu_data.当前气血
@@ -61,6 +63,8 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
                                           user_id=user_id,
                                           pagename=pagename,
                                           gold=gold,
+                                          energy=energy,
+                                          contribution=contribution,
                                           user_stat=user_stat,
                                           base_attribute=base_attribute,
                                           suangua_data=suangua_data)
@@ -732,9 +736,9 @@ async def claim_rewards(user_id):
     if not contribution:
         return "你没有贡献值"
     获得银两 = random.randint(0, contribution//7)
-    contribution -= 获得银两
-    图纸分 = contribution // 3
-    材料分 = contribution - 图纸分
+    剩余贡献 = contribution - 获得银两
+    图纸分 = 剩余贡献 // 3
+    材料分 = 剩余贡献 - 图纸分
     获得彩材料 = 材料分 // 720000
     获得紫材料 = (材料分 - 获得彩材料*720000) // 150000
     if 获得紫材料 < 0:

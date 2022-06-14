@@ -52,8 +52,6 @@ class DB():
         self.npc = self.db.npc
         # 交易行
         self.auction_house = self.db.auction_house
-        # 奖池
-        self.prize_pool = self.db.prize_pool
         # 战斗记录
         self.pk_log = self.db.pk_log
         # 剑三团队
