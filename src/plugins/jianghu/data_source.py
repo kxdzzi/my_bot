@@ -2,8 +2,7 @@ import math
 import random
 import copy
 import re
-import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from nonebot.adapters.onebot.v11 import Bot
 from src.plugins.jianghu.user_info import UserInfo
@@ -14,6 +13,7 @@ from nonebot.adapters.onebot.v11 import Message, MessageSegment
 from src.utils.db import db
 from src.utils.log import logger
 from src.utils.browser import browser
+from src.utils.email import mail_client
 from src.plugins.jianghu.shop import shop
 from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表
 from src.plugins.jianghu.jianghu import PK
@@ -47,6 +47,8 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
     if last_sign and today.date() == last_sign.date():
         suangua_data = _con.get("gua", {})
     gold = _con.get("gold", 0)
+    energy = _con.get("energy", 0)
+    contribution = _con.get("contribution", 0)
     jianghu_data = UserInfo(user_id)
     user_stat = jianghu_data.当前状态
     user_stat["当前气血"] = jianghu_data.当前气血
@@ -61,13 +63,15 @@ async def get_my_info(user_id: int, user_name: str) -> Message:
                                           user_id=user_id,
                                           pagename=pagename,
                                           gold=gold,
+                                          energy=energy,
+                                          contribution=contribution,
                                           user_stat=user_stat,
                                           base_attribute=base_attribute,
                                           suangua_data=suangua_data)
     return MessageSegment.image(img)
 
 
-async def bind_email(user_id, res):
+async def bind_email(res):
     if not res:
         return "输入错误"
     my_email = res[0]
@@ -75,9 +79,39 @@ async def bind_email(user_id, res):
     match = email_pattern.search(my_email)
     if not match:
         return "邮箱格式错误"
-    db.jianghu.update_one({"_id": user_id}, {"$set": {"email": my_email}}, True)
-    return "邮箱绑定成功"
+    vcode = "".join(random.choices("1234567890", k=6))
+    db.client["management"]["verification_code"].update_one(
+        {"_id": my_email},
+        {"$set": {
+            "_id": my_email,
+            "verification_code": vcode,
+            "create_time": datetime.now()}}, True)
+    await mail_client.send_mail([my_email], "二猫子发来的验证码", f"在群里发送“确认绑定 {my_email} {vcode}”就可以完成绑定了")
+    return f"验证邮件已发送至{my_email}, 请注意查收, 如果没收到就翻翻垃圾邮件"
 
+
+async def make_sure_bind_email(user_id, res):
+    if len(res) != 2:
+        return "输入错误"
+    my_email = res[0]
+    email_pattern = re.compile(r"^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$")
+    match = email_pattern.search(my_email)
+    if not match:
+        return "邮箱格式错误"
+    verification_code = res[1]
+    now_time = datetime.now()
+    vcode = db.client["management"]["verification_code"].find_one_and_delete(
+        {
+            "_id": my_email,
+            "verification_code": verification_code,
+            "create_time": {
+                "$gte": now_time + timedelta(minutes=-30)
+            }
+        })
+    if not vcode:
+        return "绑定失败：验证码错误或已过期"
+    db.user_info.update_one({"_id": user_id}, {"$set": {"email": my_email}}, True)
+    return "绑定成功！"
 
 async def set_name(user_id, res):
     if not res:
@@ -107,23 +141,25 @@ async def set_name(user_id, res):
     return "改名成功" + msg
 
 
-async def dig_for_treasure(user_id):
+async def dig_for_treasure(user_id, number):
     精力 = db.user_info.find_one({"_id": user_id}).get("energy", 0)
-    if 精力 < 10:
-        精力 = 0
-        return f"精力不足, 你只有{精力}精力, 挖宝需要10精力"
-    装备池 = list(db.equip.find({"持有人": -2}, projection={"装备分数": 1, "镶嵌分数": 1}))
-    if 10 < random.randint(0, len(装备池)):
-        装备 = random.choice(装备池)
-        装备名称 = 装备["_id"]
-        装备分数 = 装备.get("装备分数", 0) + 装备.get("镶嵌分数", 0)
-        db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10}})
-        db.equip.update_one({"_id": 装备名称}, {"$set": {"持有人": user_id}})
-        msg = f"获得装备【{装备名称}】({装备分数}), 精力-10, 当前精力{精力-10}"
-    else:
-        获得银两 = random.randint(1000, 5000)
-        db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -10, "gold": 获得银两}})
-        msg = f"获得{获得银两}两银子, 精力-10, 当前精力{精力-10}"
+    消耗精力 = number * 10
+    if 精力 < 消耗精力:
+        return f"精力不足, 你只有{精力}精力, 挖宝{number}次需要{消耗精力}精力"
+    获得物品 = {}
+    宝箱列表 = [
+        "青铜宝箱", "青铜宝箱", "青铜宝箱", "青铜宝箱",
+        "精铁宝箱", "精铁宝箱", "精铁宝箱",
+        "素银宝箱", "素银宝箱",
+        "鎏金宝箱"
+    ]
+    for i in random.choices(宝箱列表, k=number):
+        if i not in 获得物品:
+            获得物品[i] = 0
+        获得物品[i] += 1
+    db.knapsack.update_one({"_id": user_id}, {"$inc": 获得物品}, True)
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -消耗精力}})
+    msg = f"精力-{消耗精力}, 获得: {'、'.join([f'{k}*{v}' for k, v in 获得物品.items()])}"
     return msg
 
 
@@ -700,14 +736,14 @@ async def claim_rewards(user_id):
     if not contribution:
         return "你没有贡献值"
     获得银两 = random.randint(0, contribution//7)
-    contribution -= 获得银两
-    图纸分 = contribution // 3
-    材料分 = contribution - 图纸分
-    获得彩材料 = 材料分 // 770000
-    获得紫材料 = (材料分 - 获得彩材料*770000) // 180000
+    剩余贡献 = contribution - 获得银两
+    图纸分 = 剩余贡献 // 3
+    材料分 = 剩余贡献 - 图纸分
+    获得彩材料 = 材料分 // 720000
+    获得紫材料 = (材料分 - 获得彩材料*720000) // 150000
     if 获得紫材料 < 0:
         获得紫材料 = 0
-    获得图纸 = 图纸分 // 600000
+    获得图纸 = 图纸分 // 550000
     背包 = db.knapsack.find_one({"_id": user_id})
     图纸 = 背包.get("图纸", {})
     材料 = 背包.get("材料", {})
@@ -727,7 +763,7 @@ async def claim_rewards(user_id):
         材料[获得材料名称] += 1
         msg += f", {获得材料名称}"
     for _ in range(获得图纸):
-        图纸等级 = random.randint(2000, 3000)
+        图纸等级 = random.randint(2500, 3500)
         图纸类型 = random.choice(["武器", "饰品", "外装"])
         获得图纸名称 = 图纸类型 + str(图纸等级)
         if 获得图纸名称 not in 图纸:
@@ -1119,7 +1155,7 @@ async def give(user_id, at_qq, 物品列表):
                     continue
                 交易时间 = data.get("交易时间")
                 if 交易时间:
-                    交易保护时间 = 1800 - (datetime.now() - 交易时间).seconds
+                    交易保护时间 = 120 - (datetime.now() - 交易时间).seconds
                     if 交易保护时间 > 0:
                         msg += f"\n{data['_id']}正在交易保护期间，无法赠送。剩余时间：{交易保护时间}秒"
                         continue

@@ -1,27 +1,31 @@
-import time
-from datetime import datetime
-
 from nonebot import on_regex
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.adapters.onebot.v11.permission import GROUP_ADMIN, GROUP_OWNER
 from nonebot.exception import IgnoredException
-from nonebot.matcher import Matcher
+from nonebot.matcher import Matcher, Bot
 from nonebot.message import run_preprocessor
 from nonebot.permission import SUPERUSER
-from src.utils.black_list import check_black_list
+from src.utils.black_list import check_black_list, del_bot_to_group
 
 from . import data_source as source
 
 
 @run_preprocessor
-async def _(matcher: Matcher, event: GroupMessageEvent):
+async def _(bot: Bot, matcher: Matcher, event: GroupMessageEvent):
     '''插件管理系统，插件开关实现'''
+    bot_id = int(bot.self_id)
+    if not await source.get_bot_enable(bot_id):
+        raise IgnoredException("机器人注册")
     # 检测插件是否注册
     group_id = event.group_id
     user_id = event.user_id
     module_name = matcher.plugin_name
     is_user_black, _ = check_black_list(user_id, "QQ")
     is_group_black, _ = check_black_list(group_id, "群号")
+    if is_group_black:
+        msg = "我的天，这个群居然在黑名单了，我赶紧走了，省的被大哥批评。\n不过具体为啥被加了黑名单，你还是得问我大哥。"
+        res = await del_bot_to_group(Bot, group_id, msg)
+        raise IgnoredException(res)
     status = await source.get_plugin_status(group_id, module_name)
     if status is None:
         # 跳过未注册的插件
@@ -33,7 +37,7 @@ async def _(matcher: Matcher, event: GroupMessageEvent):
 
     # 检测机器人总开关
     bot_status = await source.get_bot_status(group_id)
-    if (not bot_status or is_user_black or is_group_black):
+    if (not bot_status or is_user_black):
         raise IgnoredException("机器人未开启")
 
 

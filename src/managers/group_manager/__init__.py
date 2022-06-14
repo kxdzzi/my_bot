@@ -1,15 +1,14 @@
-import asyncio
 import datetime
-import os
-import random
-import time
 from typing import Literal
 
 from nonebot import get_bots, on_notice, on_regex, on_request
-from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageSegment
-from nonebot.adapters.onebot.v11.event import (
-    FriendRequestEvent, GroupDecreaseNoticeEvent, GroupIncreaseNoticeEvent,
-    GroupMessageEvent, GroupRequestEvent, PrivateMessageEvent)
+from nonebot.adapters.onebot.v11 import Bot, Event, MessageSegment
+from nonebot.adapters.onebot.v11.event import (FriendRequestEvent,
+                                               GroupDecreaseNoticeEvent,
+                                               GroupIncreaseNoticeEvent,
+                                               GroupMessageEvent,
+                                               GroupRequestEvent,
+                                               PrivateMessageEvent)
 from nonebot.adapters.onebot.v11.permission import (GROUP, GROUP_ADMIN,
                                                     GROUP_OWNER)
 from nonebot.message import event_postprocessor
@@ -21,10 +20,9 @@ from src.utils.browser import browser
 from src.utils.config import config
 from src.utils.db import db
 from src.utils.log import logger
-from src.utils.scheduler import scheduler
-from src.utils.utils import GroupList_Async
 
 from . import data_source as source
+
 '''
 群管理插件，实现功能有：
 * 绑定服务器
@@ -61,17 +59,12 @@ meau = on_regex(pattern=r"^((菜单)|(状态))$",
                 priority=3,
                 block=True)  # 菜单
 
-instructions_for_use = on_regex(pattern=r"^使用说明$",
-                                permission=GROUP,
-                                priority=3,
-                                block=True)  # 菜单
-
 exit_group = on_regex(pattern=r"^(退群 \d+)$",
                       permission=SUPERUSER,
                       priority=1,
                       block=True)
 
-bot_list = on_regex(pattern=r"^(机器人|二猫子)列表$",
+bot_list = on_regex(pattern=r"^机器人列表$",
                     permission=GROUP,
                     priority=5,
                     block=True)
@@ -135,8 +128,6 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
         "sent_time": sent_time,
         "message": message
     })
-    if not db.group_conf.find_one({"_id": group_id}).get("group_switch"):
-        return
     # 记录群最后发言时间
     db.group_conf.update_one({
         "_id": group_id,
@@ -172,18 +163,6 @@ def get_status(event: GroupMessageEvent) -> bool:
 def get_notice_type(event: GroupMessageEvent) -> Literal["离群通知", "进群通知"]:
     '''返回通知类型'''
     return event.get_plaintext()[:4]
-
-
-async def get_didi_msg(bot: Bot, event: GroupMessageEvent) -> Message:
-    '''返回要说的话'''
-    msg = event.get_message()
-    group = await bot.get_group_info(group_id=event.group_id)
-    group_name = group['group_name']
-    user_name = event.sender.card if event.sender.card != "" else event.sender.nickname
-    msg_header = f"[{group_name}]({event.group_id}) | {user_name}({event.user_id}) >\n"
-    msg[0] = MessageSegment.text(msg_header + str(msg[0])[3:])
-    return msg
-
 
 # ----------------------------------------------------------------
 #  matcher实现
@@ -222,7 +201,9 @@ async def _(bot: Bot, event: GroupMessageEvent):
     '''菜单'''
     pagename = "meau.html"
     meau_data = await source.get_meau_data(event.group_id)
-    nickname = list(bot.config.nickname)[0]
+    nickname = db.bot_info.find_one({
+        "_id": int(bot.self_id)
+    }).get("bot_name", "二猫子")
     bot_id = bot.self_id
 
     img = await browser.template_to_image(pagename=pagename,
@@ -232,24 +213,18 @@ async def _(bot: Bot, event: GroupMessageEvent):
     await meau.finish(MessageSegment.image(img))
 
 
-@instructions_for_use.handle()
-async def _():
-    '''使用说明'''
-    msg = "https://docs.qq.com/doc/DVkNsaGVzVURMZ0ls"
-    await instructions_for_use.finish(msg)
-
-
 @friend_request.handle()
 async def _(bot: Bot, event: FriendRequestEvent):
     """加好友事件"""
-    out_of_work_bot = [
-        bot_inf["_id"] for bot_inf in db.bot_info.find({"work_stat": False})
-    ]
     bot_id = int(bot.self_id)
     user_id = int(event.user_id)
+    bot_info = db.bot_info.find_one({"_id": bot_id})
     logger.info(f"<y>bot({bot_id})</y> | <y>加好友({user_id})</y>")
-    is_black, _ = check_black_list(user_id, "QQ")
-    approve = (bot_id not in out_of_work_bot) and (not is_black)
+    if bot_info.get("master"):
+        approve = True
+    else:
+        is_black, _ = check_black_list(user_id, "QQ")
+        approve = not is_black and bot_info.get("work_stat")
     await bot.set_friend_add_request(
         flag=event.flag,
         approve=approve,
@@ -291,7 +266,7 @@ async def _(event: GroupMessageEvent,
 
 @bot_list.handle()
 async def _(event: GroupMessageEvent):
-    '''查看二猫子列表'''
+    '''查看机器人列表'''
     bot_info_list = db.bot_info.find({"work_stat": True})
     available_bot_list = []
     for bot_info in bot_info_list:
@@ -305,10 +280,10 @@ async def _(event: GroupMessageEvent):
                 f"{bot_id: 11d} | {bot_group_num}/{access_group_num}"
             )
     if available_bot_list:
-        msg = "  二猫子QQ   | 群数量\n"
+        msg = "  机器人QQ   | 群数量\n"
         msg += "\n".join(available_bot_list) 
     else:
-        msg = "暂无可用的二猫子"
+        msg = "暂无可用的机器人"
     await bot_list.finish(msg)
 
 
@@ -333,7 +308,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
             for usr in group_member_list:
                 group_user_id = int(usr["user_id"])
                 if group_user_id in bot_id_list and group_user_id != self_id:
-                    msg = "一群不容二二猫！！你说"
+                    msg = "一群不容二我！！你说"
                     msg += MessageSegment.at(group_user_id)
                     msg += "是什么情况？我退了！！\n你在把它踢了之前，不要再拉我了！"
                     logger.warning(
@@ -343,7 +318,7 @@ async def _(bot: Bot, event: GroupIncreaseNoticeEvent):
         logger.info(f"<y>bot({self_id})</y> | <g>加群({group_id})</g>")
         # 注册群
         await source.add_bot_to_group(group_id, int(self_id))
-        msg = '老子来了，我是免费的，如果你们花了钱那就是被骗了！'
+        msg = '老子来了，发送“菜单”看看吧！'
         await someone_in_group.finish(msg)
 
     flag = await source.get_notice_status(group_id, "welcome_status")
@@ -365,7 +340,7 @@ async def _(bot: Bot, event: GroupDecreaseNoticeEvent):
         bot_id_list = [int(i["_id"]) for i in _con]
     # 在机器人列表中且非自己
     if user_id in bot_id_list and user_id != self_id:
-        msg = "哈哈哈，你走了正好，群里就只剩下我一个二猫子了！哈哈哈哈哈哈哈！"
+        msg = "哈哈哈，你走了正好，群里就只剩下我一个了！哈哈哈哈哈哈哈！"
         await notice.finish(msg)
     # 判断是否是机器人退群
     if user_id == self_id:

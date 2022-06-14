@@ -139,7 +139,7 @@ class PK(Skill):
         守方_id = 守方.基础属性["_id"]
         日期 = datetime.now().strftime("%Y%m%d")
         data = {
-            "日期": 日期,
+            "日期": int(日期),
             "攻方": 攻方_id,
             "守方": 守方_id,
             "记录": self.战斗内容
@@ -220,7 +220,6 @@ class PK(Skill):
                 }}, True)
         if action == "世界首领":
             贡献值 = 攻方.本次伤害 // 10
-            db.prize_pool.update_one({"_id": "world_boss"}, {"$inc": {"gold_pool": 贡献值}}, True)
             data["守方"]["类型"] = "首领"
             if 胜方 == "攻":
                 data["攻方"]["胜负"] = True

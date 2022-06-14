@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="./css/bootstrap.min.css">
+    <style type="text/css">
+        @font-face{
+            font-family:youai;
+            src:url('font/youai.ttf');
+        }
+        #main{
+            font-family: youai;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card" style="width:850px;padding:10px; background-image: url('img/bg.png');" id="main">
+            <h2 align="center"></h2>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-5">
+                        <h4><strong>{{team_info.team_leader_name}}</strong></h4>
+                        <strong style="font-size: 18px;">{{team_info.server}}</strong>
+                        <strong> {{team_info._id}}</strong>
+                        {% if not team_info.public_switch %}
+                            <span style="color: rgb(13, 72, 180)">私有团队</span>
+                        {% endif %}
+                        {% if not team_info.registration_switch %}
+                            <span style="color: rgb(122, 24, 11)">暂停报名</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-7">
+                        <h4><strong>公告</strong></h4>
+                        {{team_info.team_announcements}}
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <strong>集合时间: {{team_info.meeting_time}}</strong>
+                </div>
+                <div class="row align-items-center">
+                    <strong>
+                        {% for k, v in team_info.team_configuration.items() -%}
+                        <span>
+                            <img height="25" width="25" src="sect/{{k}}.png"/>({{v.current}}/{{v.total}})
+                        </span>
+                        {%- endfor %}
+                    </strong>
+                </div>
+            </div>
+
+            <table class="table table-sm table-bordered" style="border: 1px solid rgb(73, 69, 69)" align="center">
+                <!-- <thead>
+                </thead> -->
+                <tbody>
+                    <th style="width: 50px" scope="col"></th>
+                    <td align="center" style="width: 160px" scope="col">队伍一</td>
+                    <td align="center" style="width: 160px" scope="col">队伍二</td>
+                    <td align="center" style="width: 160px" scope="col">队伍三</td>
+                    <td align="center" style="width: 160px" scope="col">队伍四</td>
+                    <td align="center" style="width: 160px" scope="col">队伍五</td>
+                    </tr>
+                    {% for x in team_info.team_members %}
+                    <tr>
+                        <td align="center">{{x.index}}</td>
+                        {% for y in x.data %}
+                        <td align="center">
+                            {% if y %}
+                                <strong>{{y.user_name}}</strong>
+                                <img height="25" width="25" src="sect/{{y.profession}}.png"/>
+                                {% if y.role == "老板" %}
+                                <img height="25" width="25" src="sect/{{y.role}}.png"/>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+    </div>
+</body>
+
+</html>

@@ -22,7 +22,7 @@ Export.default_status = True
 my_info = on_regex(r"^个人信息$", permission=GROUP, priority=5, block=True)
 set_name = on_regex(r"^改名 [\u4e00-\u9fa5]{1,8}$", permission=GROUP, priority=5, block=True)
 jianghu = on_regex(r"^江湖$", permission=GROUP, priority=5, block=True)
-dig_for_treasure = on_regex(r"^挖宝$", permission=GROUP, priority=5, block=True)
+dig_for_treasure = on_regex(r"^挖宝( \d{1,2}){0,1}$", permission=GROUP, priority=5, block=True)
 give_gold = on_regex(r"^赠送银两 *\[CQ:at,qq=\d+\] *\d+$",
                      permission=GROUP,
                      priority=5,
@@ -136,6 +136,7 @@ dungeon_progress = on_regex(r"^秘境进度$",
                             block=True)
 
 bind_email = on_regex(r"^绑定邮箱 .+$", permission=GROUP, priority=5, block=True)
+make_sure_bind_email = on_regex(r"^确认绑定 .+ \d{6}$", permission=GROUP, priority=5, block=True)
 
 
 def get_content(event: GroupMessageEvent) -> str:
@@ -147,9 +148,16 @@ def get_content(event: GroupMessageEvent) -> str:
 
 @bind_email.handle()
 async def _(event: GroupMessageEvent, res=Depends(get_content)):
-    user_id = event.user_id
-    msg = await source.bind_email(user_id, res)
+    msg = await source.bind_email(res)
     await bind_email.finish(msg)
+
+
+@make_sure_bind_email.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    user_id = event.user_id
+    msg = await source.make_sure_bind_email(user_id, res)
+    await make_sure_bind_email.finish(msg)
+
 
 @my_info.handle()
 async def _(event: GroupMessageEvent):
@@ -173,12 +181,15 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
 
 
 @dig_for_treasure.handle()
-async def _(event: GroupMessageEvent):
-    '''改名'''
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    '''挖宝'''
     user_id = event.user_id
     group_id = event.group_id
+    number = 1
+    if len(res) == 1:
+        number = int(res[0])
     logger.info(f"<y>群{group_id}</y> | <g>{user_id}</g> | 挖宝")
-    msg = await source.dig_for_treasure(user_id)
+    msg = await source.dig_for_treasure(user_id, number)
     await dig_for_treasure.finish(msg)
 
 
@@ -311,6 +322,8 @@ async def _(event: GroupMessageEvent):
     """查看商店"""
     msg = ""
     for k, v in shop.items():
+        if not v.get('价格'):
+            continue
         msg += f"{k} {v['价格']}\n"
     await viwe_shop.finish(msg)
 

@@ -1,16 +1,22 @@
 import random
+import re
 
 import requests
-from nonebot import export, on_regex, on_message
-import re
-from nonebot.rule import to_me
-from nonebot.adapters.onebot.v11.permission import GROUP
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-from nonebot import on_regex
+from nonebot import export, on_message, on_regex
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
+from nonebot.adapters.onebot.v11.permission import GROUP
+from nonebot.rule import Rule
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from src.utils.chat import chat
+from src.utils.db import db
 from tortoise import os
+from src.utils.utils import bot_info
+
+
+async def _is_tome(bot: Bot, event: GroupMessageEvent) -> bool:
+    bot_name = bot_info.bot_name_map[int(bot.self_id)]
+    return event.get_plaintext().startswith(bot_name) or event.is_tome()
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -32,10 +38,7 @@ xz_xia = on_regex(r"^.{0,5}(虾|🦞|🦐)+.{0,5}$",
                   priority=5,
                   block=True)
 
-ermaozi = on_message(rule=to_me(),
-                     permission=GROUP,
-                     priority=10,
-                     block=True)
+ermaozi = on_message(rule=Rule(_is_tome), permission=GROUP, priority=10, block=True)
 
 
 @yellow.handle()
@@ -65,13 +68,17 @@ async def _():
 
 
 @ermaozi.handle()
-async def _(event: GroupMessageEvent):
+async def _(bot: Bot, event: GroupMessageEvent):
     content = ""
+
+    nickname = db.bot_info.find_one({
+        "_id": int(bot.self_id)
+    }).get("bot_name", "二猫子")
     for i in event.message:
         if i.type == "text":
             content += i.data.get("text", "")
     if content:
-        msg = await chat(content)
+        msg = await chat(content, nickname)
     else:
-        msg = "你说的啥？我看不懂，我觉得你是在为难我二猫子！"
+        msg = f"你说的啥？我看不懂，我觉得你是在为难我{nickname}！"
     await ermaozi.finish(msg)

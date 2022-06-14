@@ -7,20 +7,18 @@ from src.utils.browser import browser
 from src.utils.log import logger
 
 
-img_dir = os.path.realpath(__file__ + "/../img/")
-
 Export = export()
 Export.plugin_name = "投喂"
-Export.plugin_command = "投喂二猫子"
-Export.plugin_usage = "钱多的老爷可以投喂二猫子，但是不会获得任何收益"
+Export.plugin_command = "投喂"
+Export.plugin_usage = "钱多的老爷可以投喂，但是不会获得任何收益"
 Export.default_status = True
 
-tipping = on_regex(r"^投喂二猫子$", permission=GROUP, priority=1, block=True)
+tipping = on_regex(r"^(投喂|打赏)$", permission=GROUP, priority=1, block=True)
 
 
 @tipping.handle()
 async def _(event: GroupMessageEvent):
-    '''个人信息'''
+    '''投喂'''
     user_id = event.user_id
     group_id = event.group_id
     user_name = event.sender.nickname

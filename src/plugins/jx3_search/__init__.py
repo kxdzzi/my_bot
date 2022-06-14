@@ -1,7 +1,6 @@
-import re
-import os
 import json
-from datetime import datetime
+import os
+import re
 from enum import Enum
 
 from nonebot import export, on_regex
@@ -11,11 +10,10 @@ from nonebot.adapters.onebot.v11.permission import GROUP
 from nonebot.matcher import Matcher
 from nonebot.params import Depends
 from src.utils.browser import browser
-from src.utils.config import config as all_config
+from src.utils.jx3_search import DAILIY_LIST, JX3APP, JX3PROFESSION
 from src.utils.log import logger
 
 from . import data_source as source
-from .config import DAILIY_LIST, JX3APP, JX3PROFESSION
 
 Export = export()
 Export.plugin_name = "剑三查询"
@@ -36,7 +34,7 @@ class REGEX(Enum):
     沙盘图片 = r"(^沙盘$)|(^沙盘 [\u4e00-\u9fa5]+$)"
     推荐小药 = r"(^小药 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+小药$)"
     推荐装备 = r"(^配装 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+配装$)"
-    查宏命令 = r"(^宏 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+宏$)"
+    查宏命令 = r"(^宏 [\u4e00-\u9fa5]+$)"
     阵眼效果 = r"(^阵眼 [\u4e00-\u9fa5]+$)|(^[\u4e00-\u9fa5]+阵眼$)"
     物品价格 = r"^物价 [\u4e00-\u9fa5]+$"
     随机骚话 = r"^骚话$"
@@ -143,7 +141,7 @@ async def get_server_2(matcher: Matcher, event: GroupMessageEvent) -> str:
     if len(text_list) == 2:
         server = await source.get_server(event.group_id)
         if not server:
-            msg = f"还没绑定服务器，你让我怎么查？\n发送“绑定 服务器全称”就可以绑定服务器了。\n别发什么“绑定 双梦”、“绑定 电八”之类的黑话，我压根就看不懂！"
+            msg = "还没绑定服务器，你让我怎么查？\n发送“绑定 服务器全称”就可以绑定服务器了。\n别发什么“绑定 双梦”、“绑定 电八”之类的黑话，我压根就看不懂！"
             await matcher.finish(msg)
     else:
         get_server = text_list[1]
@@ -212,7 +210,7 @@ async def _(event: GroupMessageEvent, server: str = Depends(get_server_1)):
     msg += f'当前时间：{data.get("date")} 星期{data.get("week")}\n'
     msg += f'今日大战：{data.get("war")}\n'
     msg += f'今日战场：{data.get("battle")}\n'
-    msg += f'公共任务：{data.get("public")}\n'
+    msg += f'公共任务：{data.get("relief")}\n'
     msg += f'阵营任务：{data.get("camp")}\n'
     msg += DAILIY_LIST.get(data.get("week"))
     if data.get("draw") is not None:
@@ -230,18 +228,8 @@ async def _(event: GroupMessageEvent, server: str = Depends(get_server_1)):
     logger.info(
         f"<y>群{event.group_id}</y> | <g>{event.user_id}</g> | 沙盘查询 | 请求：{server}"
     )
-    params = {
-        "server": server
-    }
-    msg, data = await source.get_data_from_api(app=JX3APP.沙盘图片, group_id=event.group_id,  params=params)
-    if msg != "success":
-        msg = f"查询失败，{msg}"
-        await sand_query.finish(msg)
 
-    url = data[0]['url']
-    time: int = data[0]['time']
-    day = datetime.fromtimestamp(time).strftime("%m-%d %H:%M")
-    msg = f"【{server}】沙盘，更新时间：{day}"+MessageSegment.image(url)
+    msg = await source.get_sand(server)
     await sand_query.finish(msg)
 
 
@@ -402,16 +390,9 @@ async def _(event: GroupMessageEvent, name: str = Depends(get_ex_name)):
         f"<y>群{event.group_id}</y> | <g>{event.user_id}</g> | 攻略查询 | 请求：{name}"
     )
     params = {"name": name}
-    # 判断有没有token
-    token = all_config.jx3api['jx3_token']
-    if token is None:
-        msg, data = await source.get_data_from_api(app=JX3APP.免费奇遇攻略,
-                                                   group_id=event.group_id,
-                                                   params=params)
-    else:
-        msg, data = await source.get_data_from_api(app=JX3APP.付费奇遇攻略,
-                                                   group_id=event.group_id,
-                                                   params=params)
+    msg, data = await source.get_data_from_api(app=JX3APP.奇遇攻略,
+                                               group_id=event.group_id,
+                                               params=params)
     if msg != "success":
         msg = f"查询失败，{msg}"
         await strategy_query.finish(msg)
@@ -489,16 +470,10 @@ async def _(event: GroupMessageEvent,
     )
     params = {"server": server, "name": name}
     # 判断有没有token
-    token = all_config.jx3api['jx3_token']
-    if token is None:
-        msg, data = await source.get_data_from_api(app=JX3APP.免费奇遇查询,
-                                                   group_id=event.group_id,
-                                                   params=params)
-    else:
-        msg, data = await source.get_data_from_api(app=JX3APP.付费奇遇查询,
-                                                   group_id=event.group_id,
-                                                   params=params,
-                                                   need_ticket=True)
+    msg, data = await source.get_data_from_api(app=JX3APP.奇遇查询,
+                                               group_id=event.group_id,
+                                               params=params,
+                                               need_ticket=True)
 
     if msg != "success":
         msg = f"查询失败，{msg}"

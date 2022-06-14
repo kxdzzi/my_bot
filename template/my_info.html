@@ -22,23 +22,26 @@
         <div class="card" style="width: 600px;background-image: url('img/bg.png');" id="main">
             <div class="card-body">
                 <div class="row align-items-center">
-                    <div class="col-4 text-center">
+                    <div class="col-3 text-center">
                         <div class="alert" style="border: radius 50px;">
-                            <img src="http://q1.qlogo.cn/g?b=qq&nk={{user_id}}&s=100" class="img-thumbnail" style="border-radius:1.25rem">
+                            <img src="http://q1.qlogo.cn/g?b=qq&nk={{user_id}}&s=140" class="img-thumbnail" style="border-radius:1.25rem">
                         </div>
                     </div>
-                    <div class="col-6">
-                        <h2>{{ base_attribute.名称 }}</h2>
+                    <div class="col-5">
+                        <h3>{{ base_attribute.名称 }}</h2>
                         <h4>银两：<strong style="color:rgb(136, 57, 43);">{{gold}}</strong> 两</h4>
+                        <h5>精力：<strong style="color:rgb(65, 136, 43);">{{energy}}</strong> 点</h4>
+                        <h5>贡献：<strong style="color:rgb(24, 26, 23);">{{contribution}}</strong> 点</h4>
                     </div>
                     {% if base_attribute.重伤状态 %}
-                    <div class="col-2">
-                        <img src="./img/死.svg" height="40" width="40">
-                        <div style="color:rgb(136, 57, 43);">{{ base_attribute.击杀人 }}</div>
-                        <div style="color:rgb(136, 57, 43);">{{ base_attribute.战斗编号 }}</div>
+                    <div class="col-4">
+                        <img src="./img/死.svg" height="80">
+                        <div style="color:rgb(136, 57, 43);">死于{{ base_attribute.击杀人 }}</div>
+                        <div style="color:rgb(136, 57, 43);">编号{{ base_attribute.战斗编号 }}</div>
                     </div>
                     {% endif %}
                 </div>
+                <br>
                 <div class="row">
                     <div class="col-4">
                         <h4>体质：{{ base_attribute.体质 }}</h4>

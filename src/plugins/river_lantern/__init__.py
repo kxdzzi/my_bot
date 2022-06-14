@@ -13,7 +13,7 @@ from . import data_source as source
 Export = export()
 Export.plugin_name = "河灯"
 Export.plugin_command = "放河灯"
-Export.plugin_usage = "戳一戳二猫子，就会得到一盏河灯。"
+Export.plugin_usage = "戳一戳机器人，就会得到一盏河灯。"
 Export.default_status = True
 
 sent_river_lantern = on_regex(r"^((放|匿名|回复)河灯.*)$",

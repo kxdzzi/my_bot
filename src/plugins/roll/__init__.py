@@ -1,17 +1,14 @@
 import random
 import re
-from turtle import st
 
 from nonebot import export, on_regex
-from nonebot.params import Depends
-from nonebot.adapters.onebot.v11.permission import GROUP
-from nonebot import on_regex
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
-from src.utils.content_check import content_check
+from nonebot.adapters.onebot.v11.permission import GROUP
+from nonebot.params import Depends
 from src.plugins.roll.data import food_list
-from tortoise import os
+from src.utils.content_check import content_check
 from src.utils.log import logger
-
+from tortoise import os
 
 img_dir = os.path.realpath(__file__ + "/../img/")
 

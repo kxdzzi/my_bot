@@ -1,5 +1,5 @@
-from src.utils.config import config
 from pymongo import MongoClient
+from src.utils.config import config
 
 mg_list = config.mongodb.get("mongdb_list")
 mg_usr = config.mongodb.get("mongodb_username")
@@ -52,10 +52,12 @@ class DB():
         self.npc = self.db.npc
         # 交易行
         self.auction_house = self.db.auction_house
-        # 奖池
-        self.prize_pool = self.db.prize_pool
         # 战斗记录
         self.pk_log = self.db.pk_log
+        # 剑三团队
+        self.j3_teams = self.db.j3_teams
+        # 表情包
+        self.memes = self.db.memes
 
         # 计数器
         self.counters = self.db.counters

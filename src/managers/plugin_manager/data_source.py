@@ -4,6 +4,11 @@ from nonebot.plugin import get_loaded_plugins
 from src.utils.db import db
 
 
+async def get_bot_enable(bot_id: int):
+    bot_info = db.bot_info.find_one({"_id": bot_id})
+    return bool(bot_info and bot_info.get("enable"))
+
+
 async def get_plugin_status(group_id: int, module_name: str) -> Optional[bool]:
     '''获取插件状态'''
     _con = db.plugins_info.find_one({'_id': group_id})
