@@ -17,6 +17,13 @@ activation = on_regex(pattern=r"^激活$",
                       priority=5,
                       block=True)
 
+set_instructions = on_regex(pattern=r"^修改使用说明 .+$",
+                            priority=5,
+                            block=True)
+instructions = on_regex(pattern=r"^使用说明$",
+                        permission=GROUP,
+                        priority=3,
+                        block=True)
 
 @activation.handle()
 async def _(bot: Bot, event: PrivateMessageEvent):
@@ -32,6 +39,30 @@ async def _(bot: Bot, event: PrivateMessageEvent):
     msg = "激活成功!"
     await activation.finish(msg)
 
+@instructions.handle()
+async def _(bot: Bot):
+    '''使用说明'''
+    msg = "https://docs.qq.com/doc/DVkNsaGVzVURMZ0ls"
+    bot_id = int(bot.self_id)
+    bot_info = db.bot_info.find_one({"_id": bot_id})
+    if bot_info:
+        msg = bot_info.get("instructions", msg)
+    await instructions.finish(msg)
+
+
+@set_instructions.handel()
+async def _(bot: Bot, event: PrivateMessageEvent):
+    '''修改使用说明'''
+    user_id = event.user_id
+    bot_id = int(bot.self_id)
+    text = event.get_plaintext().split(" ", 1)[-1]
+    bot_info = db.bot_info.find_one({"_id": bot_id})
+    if bot_info.get("master") != user_id:
+        return
+    db.bot_info.update_one(
+        {"_id": bot_id},
+        {"$set": {"instructions": text}}, True)
+    await set_instructions.finish("修改成功")
 
 async def archive_river_lantern():
     """河灯归档"""

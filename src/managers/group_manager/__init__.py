@@ -59,11 +59,6 @@ meau = on_regex(pattern=r"^((菜单)|(状态))$",
                 priority=3,
                 block=True)  # 菜单
 
-instructions_for_use = on_regex(pattern=r"^使用说明$",
-                                permission=GROUP,
-                                priority=3,
-                                block=True)  # 菜单
-
 exit_group = on_regex(pattern=r"^(退群 \d+)$",
                       permission=SUPERUSER,
                       priority=1,
@@ -216,13 +211,6 @@ async def _(bot: Bot, event: GroupMessageEvent):
                                           nickname=nickname,
                                           bot_id=bot_id)
     await meau.finish(MessageSegment.image(img))
-
-
-@instructions_for_use.handle()
-async def _():
-    '''使用说明'''
-    msg = "https://docs.qq.com/doc/DVkNsaGVzVURMZ0ls"
-    await instructions_for_use.finish(msg)
 
 
 @friend_request.handle()
