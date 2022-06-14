@@ -102,6 +102,29 @@ async def pull_off_shelves():
         logger.error(f"下架商品失败: {str(e)}")
 
 
+async def reset_sign_nums():
+    '''重置签到人数与福缘'''
+
+    sign_num = db.bot_conf.find_one({'_id': 1}).get("sign_num", 0)
+    prize_pool = sign_num * 5000
+    db.bot_conf.update_one({"_id": 1},
+                           {'$set': {
+                               "sign_num": 0,
+                               "prize_pool": prize_pool
+                           }}, True)
+    db.group_conf.update_many({}, {'$set': {"lucky": 0, "add_group_num": 0}}, True)
+    db.user_info.update_many({},
+                             {'$set': {
+                                 "user_lucky": 1.0,
+                                 "is_sign": False,
+                                 "river_lantern": 0,
+                                 "dungeon_num": 0,
+                                 "contribution": 0,
+                                 "energy": 100,
+                                 "discard_equipment_num": 0
+                             }}, True)
+
+
 def del_user_team(user_id, user_name, team_id):
     """删除用户信息表中的对应的团队"""
     user_info = db.user_info.find_one({"_id": user_id})
@@ -112,6 +135,7 @@ def del_user_team(user_id, user_name, team_id):
                                 {"$set": {
                                     "teams": user_teams
                                 }})
+
 
 async def disband_team():
     meeting_time = datetime.now() - timedelta(minutes=60)
@@ -173,6 +197,15 @@ async def team_notice():
         db.j3_teams.update_one({"_id": team_id}, {"$set": {"need_notice": False}})
 
 
+async def recovery_qihai():
+    datas = db.jianghu.find({"$expr": {"$lt": ["$当前气海", "$气海上限"]}})
+    for data in datas:
+        data["当前气海"] += data["气海上限"] // 10
+        if data["当前气海"] > data["气海上限"]:
+            data["当前气海"] = data["气海上限"]
+        db.jianghu.update_one({"_id": data["_id"]}, {"$set": {"当前气海": data["当前气海"]}})
+
+
 @scheduler.scheduled_job("cron", hour=4, minute=0)
 async def _():
     '''每天4点开始偷偷的干活'''
@@ -194,3 +227,18 @@ async def _():
     """每分钟检测"""
     await disband_team()
     await team_notice()
+
+
+@scheduler.scheduled_job("cron", hour=8, minute=0)
+async def _():
+    '''每天八点重置签到人数'''
+    if config.node_info.get("node") == config.node_info.get("main"):
+        logger.info("正在重置签到人数")
+        await reset_sign_nums()
+        logger.info("签到人数已重置")
+
+
+@scheduler.scheduled_job("cron", hour="*")
+async def _():
+    if config.node_info.get("node") == config.node_info.get("main"):
+        await recovery_qihai()

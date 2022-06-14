@@ -113,6 +113,7 @@ async def make_sure_bind_email(user_id, res):
     db.user_info.update_one({"_id": user_id}, {"$set": {"email": my_email}}, True)
     return "绑定成功！"
 
+
 async def set_name(user_id, res):
     if not res:
         return "输入错误"
@@ -139,6 +140,55 @@ async def set_name(user_id, res):
         msg = "，首次改名不需要花费银两。"
     db.jianghu.update_one({"_id": user_id}, {"$set": {"名称": name}}, True)
     return "改名成功" + msg
+
+
+async def practice_qihai(user_id, res):
+    '''修炼气海'''
+    if not res:
+        return "输入错误"
+    花费银两 = int(res[0])
+    if 花费银两 < 10:
+        return "最少十两银子"
+    con = db.user_info.find_one({"_id": user_id})
+    gold = 0
+    energy = 0
+    if con:
+        gold = con.get("gold", 0)
+        energy = con.get("energy", 0)
+    if gold < 花费银两:
+        return "你的银两不够！"
+    if energy < 3:
+        return "你的精力不足3点！"
+    UserInfo(user_id)
+    增加气海 = random.randint(花费银两//10, 花费银两//5)
+
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -花费银两, "energy": -3}})
+    db.jianghu.update_one({"_id": user_id}, {"$inc": {"气海上限": 增加气海}})
+
+    return f"花费{花费银两}两银子与3点精力，成功增加{增加气海}上限"
+
+
+async def recovery_qihai(user_id, res):
+    """恢复气海"""
+    if not res:
+        return "输入错误"
+    花费银两 = int(res[0])
+    con = db.user_info.find_one({"_id": user_id})
+    gold = 0
+    if con:
+        gold = con.get("gold", 0)
+    if gold < 花费银两:
+        return "你的银两不够！"
+    usr = UserInfo(user_id)
+    损失气海 = usr.基础属性["气海上限"] - usr.当前气海
+    需要花费 = 损失气海 // 100
+    if 花费银两 < 需要花费:
+        需要花费 = 花费银两
+
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -需要花费}})
+    db.jianghu.update_one({"_id": user_id}, {"$inc": {"当前气海": 需要花费*100}})
+
+    return f"花费{需要花费}两银子，恢复气海{需要花费*100}"
 
 
 async def dig_for_treasure(user_id, number):
@@ -919,13 +969,9 @@ async def forgotten_skill(user_id, res):
     return f"遗忘武学{skill_name}成功！"
 
 
-async def comprehension_skill(user_id, res):
+async def comprehension_skill(user_id):
     """领悟武学"""
-    if not res:
-        return "输入格式错误"
-    银两 = int(res[0])
-    if 银两 <= 0:
-        return "想领悟武学，多多少少的也得花一点银子吧……"
+    银两 = 200
     拥有银两 = 0
     con = db.user_info.find_one({"_id": user_id})
     if con:
@@ -937,11 +983,9 @@ async def comprehension_skill(user_id, res):
     已领悟武学 = user_info.基础属性.get("已领悟武学", [])
     sl = Skill()
     全部武学 = list(sl.skill.keys())
-    全部武学数量 = len(全部武学)
     已领悟武学数量 = len(已领悟武学)
-    if 已领悟武学数量 == 全部武学数量:
-        return "你已经学会了所有武学，不需要再领悟了！"
-
+    if 已领悟武学数量 > 14:
+        return "每人只能领悟十四个武学，请先遗忘其他武学后再继续领悟吧。"
     # 检查领悟武学cd
     n_cd_time = 60
     app_name = "领悟武学"
@@ -952,12 +996,10 @@ async def comprehension_skill(user_id, res):
     await search_once(user_id, app_name)
 
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -银两}}, True)
-    if random.randint(1, 100) < 银两:
-        武学 = random.choice(全部武学)
-        if 武学 in 已领悟武学:
-            return "领悟失败"
-    else:
+    武学 = random.choice(全部武学)
+    if 武学 in 已领悟武学:
         return "领悟失败"
+
     已领悟武学.append(武学)
     db.jianghu.update_one({"_id": user_id}, {"$set": {"已领悟武学": 已领悟武学}}, True)
     return f"花费{银两}两银子，成功领悟武学：{武学}"
@@ -976,7 +1018,7 @@ async def impart_skill(user_id, at_qq, 武学):
     con = db.user_info.find_one({"_id": user_id})
     if con:
         拥有银两 = con.get("gold", 0)
-    需要花费银两 = 1000
+    需要花费银两 = 2000
     if 拥有银两 < 需要花费银两:
         return f"传授武学需要{需要花费银两}两银子，你的银两不足"
     被传授方武学.append(武学)
@@ -986,7 +1028,7 @@ async def impart_skill(user_id, at_qq, 武学):
 
 
 async def pk_log(日期, 编号):
-    战斗记录 = db.pk_log.find_one({"编号": 编号, "日期": 日期})
+    战斗记录 = db.pk_log.find_one({"编号": 编号, "日期": int(日期)})
     if not 战斗记录:
         return "没有找到对应的战斗记录"
     data = {

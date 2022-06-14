@@ -24,13 +24,12 @@
                 <div class="row align-items-center">
                     <div class="col-3 text-center">
                         <div class="alert" style="border: radius 50px;">
-                            <img src="http://q1.qlogo.cn/g?b=qq&nk={{user_id}}&s=140" class="img-thumbnail" style="border-radius:1.25rem">
+                            <img src="http://q1.qlogo.cn/g?b=qq&nk={{user_id}}&s=160" class="img-thumbnail" style="border-radius:1.25rem">
                         </div>
                     </div>
                     <div class="col-5">
                         <h3>{{ base_attribute.名称 }}</h2>
                         <h4>银两：<strong style="color:rgb(136, 57, 43);">{{gold}}</strong> 两</h4>
-                        <h5>精力：<strong style="color:rgb(65, 136, 43);">{{energy}}</strong> 点</h4>
                         <h5>贡献：<strong style="color:rgb(24, 26, 23);">{{contribution}}</strong> 点</h4>
                     </div>
                     {% if base_attribute.重伤状态 %}
@@ -49,6 +48,7 @@
                         <h4>根骨：{{ base_attribute.根骨 }}</h4>
                         <h4>力道：{{ base_attribute.力道 }}</h4>
                         <h4>元气：{{ base_attribute.元气 }}</h4>
+                        <h4>精力：<strong style="color:rgb(65, 136, 43);">{{energy}}</strong></h4>
                         {% if base_attribute.善恶值 < 0 %}
                             <h4>善恶值：<strong style="color:rgb(136, 57, 43);">{{ base_attribute.善恶值 }}</strong></h4>
                         {% else %}
@@ -56,12 +56,13 @@
                         {% endif %}
                     </div>
                     <div class="col-8">
-                        {% if user_stat.当前气血 < user_stat.气血上限/2 %}
-                            <h5>气血：<span style="color:rgb(136, 57, 43);">{{ user_stat.当前气血 }}</span>/<span style="color:rgb(136, 57, 43);">{{ user_stat.气血上限 }}</span></h5>
+                        {% if base_attribute.当前气血 < user_stat.气血上限/2 %}
+                            <h5>气血：<span style="color:rgb(136, 57, 43);">{{ base_attribute.当前气血 }}</span>/<span style="color:rgb(136, 57, 43);">{{ user_stat.气血上限 }}</span></h5>
                             {% else %}
-                            <h5>气血：<span style="color:rgb(65, 136, 43);">{{ user_stat.当前气血 }}</span>/<span style="color:rgb(65, 136, 43);">{{ user_stat.气血上限 }}</span></h5>
+                            <h5>气血：<span style="color:rgb(65, 136, 43);">{{ base_attribute.当前气血 }}</span>/<span style="color:rgb(65, 136, 43);">{{ user_stat.气血上限 }}</span></h5>
                         {% endif %}
-                        <h5>内力：<span style="color:rgb(24, 68, 161);">{{ user_stat.当前内力 }}</span>/<span style="color:rgb(24, 68, 161);">{{ user_stat.内力上限 }}</span></h5>
+                        <h5>内力：<span style="color:rgb(24, 68, 161);">{{ base_attribute.当前内力 }}</span>/<span style="color:rgb(24, 68, 161);">{{ user_stat.内力上限 }}</span></h5>
+                        <h5>气海：<span style="color:rgb(126, 24, 146);">{{ base_attribute.当前气海 }}</span>/<span style="color:rgb(126, 24, 146);">{{ base_attribute.气海上限 }}</span></h5>
                         <h5>速度：{{user_stat.速度}}</h5>
                         <h5>状态抗性：{{user_stat.状态抗性}}</h5>
                         <h5>外功攻击：{{user_stat.外功攻击}} | 外功穿透：{{user_stat.外功穿透}}</h5>
@@ -85,7 +86,7 @@
                 <br>
                 <div class="row">
                     <h4>武学</h4>
-                    <h5>
+                    <h6>
                         {%- for i in base_attribute.武学 -%}
                         {% if i %}
                         【{{ i }}】
@@ -93,7 +94,7 @@
                         【】
                         {% endif %}
                         {% endfor %}
-                    </h5>
+                    </h6>
                     {% if base_attribute.已领悟武学 %}
                     <h4>已领悟武学</h4>
                     <h6>

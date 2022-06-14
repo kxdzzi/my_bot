@@ -43,7 +43,9 @@ give = on_regex(r"^赠送 *\[CQ:at,qq=\d+\] *.+$",
                 permission=GROUP,
                 priority=5,
                 block=True)
-comprehension_skill = on_regex(r"^领悟武学 \d+$",
+practice_qihai = on_regex(r"^修炼气海 \d+$", permission=GROUP, priority=5, block=True)
+recovery_qihai = on_regex(r"^恢复气海 \d+$", permission=GROUP, priority=5, block=True)
+comprehension_skill = on_regex(r"^领悟武学$",
                                permission=GROUP,
                                priority=5,
                                block=True)
@@ -76,9 +78,9 @@ inlay_equipment = on_regex(r"^镶嵌装备 .+? .+?$",
                            priority=5,
                            block=True)
 discard_equipment = on_regex(r"^丢弃装备 .+?$",
-                           permission=GROUP,
-                           priority=5,
-                           block=True)
+                             permission=GROUP,
+                             priority=5,
+                             block=True)
 rebuild_equipment = on_regex(r"^重铸装备 .+?$",
                              permission=GROUP,
                              priority=5,
@@ -180,6 +182,22 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     await set_name.finish(msg)
 
 
+@practice_qihai.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    '''修炼气海'''
+    user_id = event.user_id
+    msg = await source.practice_qihai(user_id, res)
+    await practice_qihai.finish(msg)
+
+
+@recovery_qihai.handle()
+async def _(event: GroupMessageEvent, res=Depends(get_content)):
+    '''恢复气海'''
+    user_id = event.user_id
+    msg = await source.recovery_qihai(user_id, res)
+    await recovery_qihai.finish(msg)
+
+
 @dig_for_treasure.handle()
 async def _(event: GroupMessageEvent, res=Depends(get_content)):
     '''挖宝'''
@@ -252,10 +270,9 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
         await buy_commodity.finish("这条路是孤独的，只能前行，退无可退。")
     group_id = event.group_id
     logger.info(f"<y>群{group_id}</y> | <g>{user_id}</g> | 购买物品")
-    if len(res) != 1 or not res[0].isdigit():
+    if len(res) != 1:
         await buy_commodity.finish("格式错误")
-    编号 = int(res[0])
-    msg = await 购买商品(user_id, 编号)
+    msg = await 购买商品(user_id, res[0])
     await buy_commodity.finish(msg)
 
 
@@ -471,10 +488,10 @@ async def _(event: GroupMessageEvent):
 
 
 @comprehension_skill.handle()
-async def _(event: GroupMessageEvent, res=Depends(get_content)):
+async def _(event: GroupMessageEvent):
     """领悟武学"""
     user_id = event.user_id
-    msg = await source.comprehension_skill(user_id, res)
+    msg = await source.comprehension_skill(user_id)
     await comprehension_skill.finish(msg)
 
 @forgotten_skill.handle()
