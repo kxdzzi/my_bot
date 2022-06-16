@@ -396,26 +396,31 @@ async def rebuild_equipment(user_id, 装备名称, 图纸列表):
         return "装备一不存在"
     if 装备["持有人"] != user_id:
         return "你没有该装备"
-    if 装备["装备分数"] < 100:
-        return "装备分数低于100，无法重铸"
+    if 装备["装备分数"] < 1500:
+        return "装备分数低于1500，无法重铸"
     if 装备名称 == 用户装备[装备["类型"]]:
         return "该装备正在使用，无法重铸"
 
     用户背包 = db.knapsack.find_one({"_id": user_id})
     用户图纸 = 用户背包.get("图纸", {})
-    用户图纸列表 = sorted(用户图纸.keys(), key=lambda x: int(x[2:]), reverse=False)
     图纸分数 = 0
     for 图纸名称 in 图纸列表:
         if 图纸名称 not in 用户图纸:
             return f"图纸不存在！"
-        图纸分数 += int(图纸名称[2:])
+        图纸等级 = int(图纸名称[2:])
+        if 图纸等级 <= 1500:
+            continue
+        图纸分数 += 图纸等级
         用户图纸[图纸名称] -= 1
         if 用户图纸[图纸名称] == 0:
             del 用户图纸[图纸名称]
-    else:
+    if not 图纸列表:
+        用户图纸列表 = sorted(用户图纸.keys(), key=lambda x: int(x[2:]), reverse=False)
         # 不指定图纸时
         for 图纸名称 in 用户图纸列表:
             图纸等级 = int(图纸名称[2:])
+            if 图纸等级 <= 1500:
+                continue
             图纸分数 += 图纸等级
             用户图纸[图纸名称] -= 1
             if 用户图纸[图纸名称] == 0:
