@@ -479,7 +479,7 @@ async def _(event: GroupMessageEvent):
 
 @my_gear.handle()
 async def _(event: GroupMessageEvent):
-    """查看背包"""
+    """查看装备"""
     user_id = event.user_id
     text = event.get_plaintext()
     re_obj = re.compile(r"(\d+)")
