@@ -415,10 +415,20 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
 async def _(event: GroupMessageEvent, res=Depends(get_content)):
     """重铸装备"""
     user_id = event.user_id
-    if len(res) != 2:
-        await rebuild_equipment.finish("命令格式：“重铸装备 装备一 装备二”\n其中装备一保留属性，装备二保留名称"
-                                       )
-    msg = await source.rebuild_equipment(user_id, res[0], res[1])
+    msg = "命令格式：“重铸装备 装备一 装备二”\n"\
+            "其中装备一保留属性，装备二保留名称\n"\
+            "或者：“重铸装备 装备 图纸1 图纸2 ...”\n"\
+            "使用图纸重铸则会修改其属性，若不指定图纸则自动使用低级图纸进行重铸"
+    if not re.findall("^.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]$", res[0]):
+        pass
+    elif len(res) == 2 and re.findall("^.{2,4}[剑杖扇灯锤甲服衫袍铠链牌坠玦环]$", res[1]):
+        msg = await source.rename_equipment(user_id, res[0], res[1])
+    elif len(res) > 2:
+        msg = await source.rebuild_equipment(user_id, res[0], res[1:])
+    elif len(res) == 1:
+        msg = await source.rebuild_equipment(user_id, res[0], [])
+    else:
+        pass
     await rebuild_equipment.finish(msg)
 
 

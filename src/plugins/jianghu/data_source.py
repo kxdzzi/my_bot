@@ -15,7 +15,7 @@ from src.utils.log import logger
 from src.utils.browser import browser
 from src.utils.email import mail_client
 from src.plugins.jianghu.shop import shop
-from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表
+from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表, 重铸装备
 from src.plugins.jianghu.jianghu import PK
 from src.plugins.jianghu.world_boss import world_boss, start_resurrection_world_boss
 from src.utils.cooldown_time import search_record, search_once
@@ -361,7 +361,7 @@ async def sell_equipment(user_id, 装备名称: str):
     return f"出售成功，获得银两：{获得银两}"
 
 
-async def rebuild_equipment(user_id, 装备一名称, 装备二名称):
+async def rename_equipment(user_id, 装备一名称, 装备二名称):
     '''重铸装备'''
     if 装备一名称[-1] != 装备二名称[-1]:
         return "同类型装备才可以重铸"
@@ -385,6 +385,48 @@ async def rebuild_equipment(user_id, 装备一名称, 装备二名称):
     del 装备一["_id"]
     db.equip.update_one({"_id": 装备二名称}, {"$set": 装备一})
     db.equip.delete_one({"_id": 装备一名称})
+    return "装备重铸成功"
+
+
+async def rebuild_equipment(user_id, 装备名称, 图纸列表):
+    '''重铸装备'''
+    用户装备 = db.jianghu.find_one({"_id": user_id})["装备"]
+    装备 = db.equip.find_one({"_id": 装备名称})
+    if not 装备:
+        return "装备一不存在"
+    if 装备["持有人"] != user_id:
+        return "你没有该装备"
+    if 装备名称 == 用户装备[装备["类型"]]:
+        return "该装备正在使用，无法重铸"
+
+    用户背包 = db.knapsack.find_one({"_id": user_id})
+    用户图纸 = 用户背包.get("图纸", {})
+    用户图纸列表 = sorted(用户图纸.keys(), key=lambda x: int(x[2:]), reverse=False)
+    图纸分数 = 0
+    for 图纸名称 in 图纸列表:
+        if 图纸名称 not in 用户图纸:
+            return f"图纸不存在！"
+        图纸分数 += int(图纸名称[2:])
+        用户图纸[图纸名称] -= 1
+        if 用户图纸[图纸名称] == 0:
+            del 用户图纸[图纸名称]
+    else:
+        # 不指定图纸时
+        for 图纸名称 in 用户图纸列表:
+            图纸等级 = int(图纸名称[2:])
+            图纸分数 += 图纸等级
+            用户图纸[图纸名称] -= 1
+            if 用户图纸[图纸名称] == 0:
+                del 用户图纸[图纸名称]
+            if 图纸分数 >= 装备["装备分数"]:
+                break
+
+    if 装备["装备分数"] > 图纸分数:
+        return "图纸等级之和需要高于装备分数"
+    装备 = 重铸装备(装备)
+    db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
+    db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸}})
+
     return "装备重铸成功"
 
 
