@@ -206,7 +206,7 @@ def 重铸装备(装备):
 
     if 装备分数 < 2000:
         附加数量 = random.randint(0, 1)
-    elif 材料等级 < 6000:
+    elif 装备分数 < 6000:
         附加数量 = random.randint(1, 2)
     else:
         附加数量 = random.randint(2, 3)
