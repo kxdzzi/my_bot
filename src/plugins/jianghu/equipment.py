@@ -156,13 +156,13 @@ text = "翊哈天地玄黄宇宙洪荒日月盈昃辰宿列张寒来暑往秋收
 }
 
 
-def 随机拆分整数(amount, num):
+def 随机拆分整数(拆分数量, 数字):
     list1 = []
-    for i in range(0,num-1):
-        a = random.randint(0,amount)    # 生成 n-1 个随机节点
+    for i in range(0, 拆分数量-1):
+        a = random.randint(0,数字)    # 生成 n-1 个随机节点
         list1.append(a)
     list1.sort()                        # 节点排序
-    list1.append(amount)                # 设置第 n 个节点为amount，即总金额
+    list1.append(数字)                # 设置第 n 个节点为amount，即总金额
 
     list2 = []
     for i in range(len(list1)):
