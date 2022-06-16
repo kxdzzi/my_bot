@@ -396,6 +396,8 @@ async def rebuild_equipment(user_id, 装备名称, 图纸列表):
         return "装备一不存在"
     if 装备["持有人"] != user_id:
         return "你没有该装备"
+    if 装备["装备分数"] < 100:
+        return "装备分数低于100，无法重铸"
     if 装备名称 == 用户装备[装备["类型"]]:
         return "该装备正在使用，无法重铸"
 
