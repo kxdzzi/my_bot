@@ -427,8 +427,12 @@ async def rebuild_equipment(user_id, 装备名称, 图纸列表):
     装备 = 重铸装备(装备)
     db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
     db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 用户图纸}})
-
-    return f"消耗: {','.join(图纸列表)}, 装备重铸成功\n{装备['基础属性']}"
+    msg = f"消耗: {','.join(图纸列表)}, 装备重铸成功\n装备名称：{装备['_id']}（{装备['装备分数']}）\n基础属性：{装备['基础属性']}\n"
+    if 装备.get("附加属性"):
+        msg += f"附加属性：{装备['附加属性']}\n"
+    打造人 = db.jianghu.find_one({'_id': 装备['打造人']})
+    msg += f"打造人：{打造人['名称']}\n打造时间：{装备['打造日期'].strftime('%Y-%m-%d %H:%M:%S')}"
+    return msg
 
 
 async def build_equipment(user_id, res):
