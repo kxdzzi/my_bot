@@ -408,7 +408,7 @@ async def rebuild_equipment(user_id, 装备名称, 图纸列表):
         if 图纸名称 not in 用户图纸:
             return f"图纸不存在！"
         图纸等级 = int(图纸名称[2:])
-        if 图纸等级 <= 1500:
+        if 图纸等级 <= 150:
             continue
         图纸分数 += 图纸等级
         用户图纸[图纸名称] -= 1
@@ -419,7 +419,7 @@ async def rebuild_equipment(user_id, 装备名称, 图纸列表):
         # 不指定图纸时
         for 图纸名称 in 用户图纸列表:
             图纸等级 = int(图纸名称[2:])
-            if 图纸等级 <= 1500:
+            if 图纸等级 <= 150:
                 continue
             图纸分数 += 图纸等级
             用户图纸[图纸名称] -= 1
@@ -636,13 +636,13 @@ async def compose(user_id, res):
         elif not 过滤条件:
             过滤条件 = ["武器", "外装", "饰品"]
 
-        if 合成最高等级 > 3000 or 合成最高等级 == 0:
-            合成最高等级 = 3000
+        if 合成最高等级 > 300 or 合成最高等级 == 0:
+            合成最高等级 = 300
         最低, 最高 = 1, 合成最高等级
         if 等级限制:
             最低, 最高 = min(等级限制), max(等级限制)
-        if 最高 > 1500:
-            最高 = 1500
+        if 最高 > 150:
+            最高 = 150
         while True:
             # 按条件过滤图纸
             用户图纸列表 = [i for i in 用户输入图纸列表 if i in 图纸]
@@ -867,7 +867,7 @@ async def claim_rewards(user_id):
         材料[获得材料名称] += 1
         msg += f", {获得材料名称}"
     for _ in range(获得图纸):
-        图纸等级 = random.randint(2500, 3500)
+        图纸等级 = random.randint(250, 350)
         图纸类型 = random.choice(["武器", "饰品", "外装"])
         获得图纸名称 = 图纸类型 + str(图纸等级)
         if 获得图纸名称 not in 图纸:
@@ -1025,7 +1025,7 @@ async def forgotten_skill(user_id, res):
 
 async def comprehension_skill(user_id):
     """领悟武学"""
-    银两 = 200
+    银两 = 300
     拥有银两 = 0
     con = db.user_info.find_one({"_id": user_id})
     if con:
@@ -1072,7 +1072,7 @@ async def impart_skill(user_id, at_qq, 武学):
     con = db.user_info.find_one({"_id": user_id})
     if con:
         拥有银两 = con.get("gold", 0)
-    需要花费银两 = 2000
+    需要花费银两 = 3000
     if 拥有银两 < 需要花费银两:
         return f"传授武学需要{需要花费银两}两银子，你的银两不足"
     被传授方武学.append(武学)
