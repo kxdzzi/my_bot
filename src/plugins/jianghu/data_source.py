@@ -418,6 +418,7 @@ async def rebuild_equipment(user_id, 装备名称, 图纸列表):
             用户图纸[图纸名称] -= 1
             if 用户图纸[图纸名称] == 0:
                 del 用户图纸[图纸名称]
+            图纸列表.append(图纸名称)
             if 图纸分数 >= 装备["装备分数"]:
                 break
 
@@ -427,7 +428,7 @@ async def rebuild_equipment(user_id, 装备名称, 图纸列表):
     db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
     db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸}})
 
-    return "装备重铸成功"
+    return f"消耗: {','.join(图纸列表)}, 装备重铸成功\n{装备['基础属性']}"
 
 
 async def build_equipment(user_id, res):
