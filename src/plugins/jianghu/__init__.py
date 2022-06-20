@@ -117,7 +117,7 @@ find_commodity = on_regex(r"^(交易行|查找(商品|物品)).*$",
                           priority=5,
                           block=True)
 
-buy_commodity = on_regex(r"^购买(商品|物品) \d+$",
+buy_commodity = on_regex(r"^购买(商品|物品) (([\u4e00-\u9fa5]+(\*\d*){0,1})|\d+)$",
                          permission=GROUP,
                          priority=5,
                          block=True)

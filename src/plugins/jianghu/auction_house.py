@@ -159,20 +159,19 @@ async def 购买商品(购买人id, 名称):
     user_info = UserInfo(购买人id)
     if user_info.基础属性["善恶值"] < -2000:
         return "善恶值过低, 无法购买物品"
-    数量 = 1
+    limit = 1
     if 名称.isdigit():
         商品id = int(名称)
-        # 购买人银两是否足够
         查找商品 = db.auction_house.find({"_id": 商品id})
         if not 查找商品:
             return "商品不存在！"
     if "*" in 名称:
-        商品名称, 数量 = 名称.split("*")
-        数量 = int(数量)
-        filter = {'名称': 商品名称}
-        sort = list({'价格': 1}.items())
-        limit = 数量
-        查找商品 = db.auction_house.find(filter=filter, sort=sort, limit=limit)
+        名称, 数量 = 名称.split("*")
+        limit = int(数量)
+    filter = {'名称': 名称}
+    sort = list({'价格': 1}.items())
+    查找商品 = db.auction_house.find(filter=filter, sort=sort, limit=limit)
+
     数量 = 0
     总花费 = 0
     for 商品 in 查找商品:
