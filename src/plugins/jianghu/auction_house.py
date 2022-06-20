@@ -164,12 +164,11 @@ async def 购买商品(购买人id, 名称):
         商品id = int(名称)
         # 购买人银两是否足够
         查找商品 = db.auction_house.find({"_id": 商品id})
-        if not 商品:
+        if not 查找商品:
             return "商品不存在！"
     if "*" in 商品名称:
         商品名称, 数量 = 名称.split("*")
         数量 = int(数量)
-        商品 = db.auction_house.find({"名称": 商品名称})
         filter = {'名称': 商品名称}
         sort = list({'价格': 1}.items())
         limit = 数量

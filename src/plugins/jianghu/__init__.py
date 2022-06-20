@@ -232,7 +232,7 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     group_id = event.group_id
     logger.info(f"<y>群{group_id}</y> | <g>{user_id}</g> | 下架物品")
     if len(res) != 1 or not res[0].isdigit():
-        await buy_commodity.finish("格式错误")
+        await pull_off_shelves.finish("格式错误")
     编号 = int(res[0])
     msg = await 下架商品(user_id, 编号)
     await pull_off_shelves.finish(msg)
