@@ -166,7 +166,7 @@ async def 购买商品(购买人id, 名称):
         查找商品 = db.auction_house.find({"_id": 商品id})
         if not 查找商品:
             return "商品不存在！"
-    if "*" in 商品名称:
+    if "*" in 名称:
         商品名称, 数量 = 名称.split("*")
         数量 = int(数量)
         filter = {'名称': 商品名称}
