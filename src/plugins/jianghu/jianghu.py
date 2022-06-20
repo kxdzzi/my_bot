@@ -44,10 +44,10 @@ class PK(Skill):
             elif self.skill[攻方主动技能]["招式类型"] == "内功招式" and "封内" in 攻方限制状态:
                 self.战斗记录(f"{攻.名称} 被【封内】，{攻方主动技能}无法施放")
                 return
-            重伤信息 = self.skill[攻方主动技能]["招式"](攻, 守)
+            重伤状态 = self.skill[攻方主动技能]["招式"](攻, 守)
         else:
-            重伤信息, _ = self.造成伤害("普通攻击", 攻, 守, *攻.普通攻击())
-        return 重伤信息
+            重伤状态, _ = self.造成伤害("普通攻击", 攻, 守, *攻.普通攻击())
+        return 重伤状态
 
     async def 善恶值变化(self, user_id: int, 善恶值: int):
         db.jianghu.update_one({"_id": user_id}, {"$inc": {"善恶值": 善恶值}}, True)
@@ -273,11 +273,34 @@ class PK(Skill):
             data["结算"] += f"<br>{msg}"
         return data
 
+    async def 战前恢复(self, user_info: UserInfo):
+        气血上限 = user_info.当前状态["气血上限"]
+        当前气血 = user_info.当前气血
+        需恢复气血 = 气血上限 - 当前气血
+        if 需恢复气血 > user_info.当前气海:
+            user_info.气血变化(user_info.当前气海)
+            user_info.气海变化(-user_info.当前气海)
+        else:
+            user_info.气血变化(需恢复气血)
+            user_info.气海变化(-需恢复气血)
+        内力上限 = user_info.当前状态["内力上限"]
+        当前内力 = user_info.当前内力
+        需恢复内力 = 内力上限 - 当前内力
+        if 需恢复内力 > user_info.当前气海:
+            user_info.内力变化(user_info.当前气海)
+            user_info.气海变化(-user_info.当前气海)
+        else:
+            user_info.内力变化(需恢复内力)
+            user_info.气海变化(-需恢复内力)
+
     async def main(self, action, 攻方id: int, 守方id: int, msg=""):
         攻方 = UserInfo(攻方id)
         if 攻方.基础属性['名称'] == '无名':
             return "需要改名后才能发起进攻"
         守方 = UserInfo(守方id, action=action)
+        self.战斗记录(f"{攻方.名称} ---{action}--> {守方.名称}")
+        await self.战前恢复(攻方)
+        await self.战前恢复(守方)
         self.攻方初始气血 = 攻方.当前气血
         self.守方初始气血 = 守方.当前气血
         self.攻方初始内力 = 攻方.当前内力

@@ -15,7 +15,7 @@ from src.utils.log import logger
 from src.utils.browser import browser
 from src.utils.email import mail_client
 from src.plugins.jianghu.shop import shop
-from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表
+from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表, 重铸装备
 from src.plugins.jianghu.jianghu import PK
 from src.plugins.jianghu.world_boss import world_boss, start_resurrection_world_boss
 from src.utils.cooldown_time import search_record, search_once
@@ -113,6 +113,7 @@ async def make_sure_bind_email(user_id, res):
     db.user_info.update_one({"_id": user_id}, {"$set": {"email": my_email}}, True)
     return "绑定成功！"
 
+
 async def set_name(user_id, res):
     if not res:
         return "输入错误"
@@ -139,6 +140,55 @@ async def set_name(user_id, res):
         msg = "，首次改名不需要花费银两。"
     db.jianghu.update_one({"_id": user_id}, {"$set": {"名称": name}}, True)
     return "改名成功" + msg
+
+
+async def practice_qihai(user_id, res):
+    '''修炼气海'''
+    if not res:
+        return "输入错误"
+    花费银两 = int(res[0])
+    if 花费银两 < 10:
+        return "最少十两银子"
+    con = db.user_info.find_one({"_id": user_id})
+    gold = 0
+    energy = 0
+    if con:
+        gold = con.get("gold", 0)
+        energy = con.get("energy", 0)
+    if gold < 花费银两:
+        return "你的银两不够！"
+    if energy < 3:
+        return "你的精力不足3点！"
+    UserInfo(user_id)
+    增加气海 = random.randint(花费银两//10, 花费银两//5)
+
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -花费银两, "energy": -3}})
+    db.jianghu.update_one({"_id": user_id}, {"$inc": {"气海上限": 增加气海}})
+
+    return f"花费{花费银两}两银子与3点精力，成功增加{增加气海}上限"
+
+
+async def recovery_qihai(user_id, res):
+    """恢复气海"""
+    if not res:
+        return "输入错误"
+    花费银两 = int(res[0])
+    con = db.user_info.find_one({"_id": user_id})
+    gold = 0
+    if con:
+        gold = con.get("gold", 0)
+    if gold < 花费银两:
+        return "你的银两不够！"
+    usr = UserInfo(user_id)
+    损失气海 = usr.基础属性["气海上限"] - usr.当前气海
+    需要花费 = 损失气海 // 100
+    if 花费银两 < 需要花费:
+        需要花费 = 花费银两
+
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -需要花费}})
+    db.jianghu.update_one({"_id": user_id}, {"$inc": {"当前气海": 需要花费*100}})
+
+    return f"花费{需要花费}两银子，恢复气海{需要花费*100}"
 
 
 async def dig_for_treasure(user_id, number):
@@ -311,7 +361,7 @@ async def sell_equipment(user_id, 装备名称: str):
     return f"出售成功，获得银两：{获得银两}"
 
 
-async def rebuild_equipment(user_id, 装备一名称, 装备二名称):
+async def rename_equipment(user_id, 装备一名称, 装备二名称):
     '''重铸装备'''
     if 装备一名称[-1] != 装备二名称[-1]:
         return "同类型装备才可以重铸"
@@ -336,6 +386,60 @@ async def rebuild_equipment(user_id, 装备一名称, 装备二名称):
     db.equip.update_one({"_id": 装备二名称}, {"$set": 装备一})
     db.equip.delete_one({"_id": 装备一名称})
     return "装备重铸成功"
+
+
+async def rebuild_equipment(user_id, 装备名称, 图纸列表):
+    '''重铸装备'''
+    用户装备 = db.jianghu.find_one({"_id": user_id})["装备"]
+    装备 = db.equip.find_one({"_id": 装备名称})
+    if not 装备:
+        return "装备一不存在"
+    if 装备["持有人"] != user_id:
+        return "你没有该装备"
+    if 装备["装备分数"] < 1500:
+        return "装备分数低于1500，无法重铸"
+    if 装备名称 == 用户装备[装备["类型"]]:
+        return "该装备正在使用，无法重铸"
+
+    用户背包 = db.knapsack.find_one({"_id": user_id})
+    用户图纸 = 用户背包.get("图纸", {})
+    图纸分数 = 0
+    for 图纸名称 in 图纸列表:
+        if 图纸名称 not in 用户图纸:
+            return f"图纸不存在！"
+        图纸等级 = int(图纸名称[2:])
+        if 图纸等级 <= 150:
+            continue
+        图纸分数 += 图纸等级
+        用户图纸[图纸名称] -= 1
+        if 用户图纸[图纸名称] == 0:
+            del 用户图纸[图纸名称]
+    if not 图纸列表:
+        用户图纸列表 = sorted(用户图纸.keys(), key=lambda x: int(x[2:]), reverse=False)
+        # 不指定图纸时
+        for 图纸名称 in 用户图纸列表:
+            图纸等级 = int(图纸名称[2:])
+            if 图纸等级 <= 150:
+                continue
+            图纸分数 += 图纸等级
+            用户图纸[图纸名称] -= 1
+            if 用户图纸[图纸名称] == 0:
+                del 用户图纸[图纸名称]
+            图纸列表.append(图纸名称)
+            if 图纸分数 * 10 >= 装备["装备分数"]:
+                break
+
+    if 装备["装备分数"] > 图纸分数 * 10:
+        return "图纸等级之和需要高于装备分数"
+    装备 = 重铸装备(装备)
+    db.equip.update_one({"_id": 装备名称}, {"$set": 装备})
+    db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 用户图纸}})
+    msg = f"消耗: {','.join(图纸列表)}, 装备重铸成功\n装备名称：{装备['_id']}（{装备['装备分数']}）\n基础属性：{装备['基础属性']}\n"
+    if 装备.get("附加属性"):
+        msg += f"附加属性：{装备['附加属性']}\n"
+    打造人 = db.jianghu.find_one({'_id': 装备['打造人']})
+    msg += f"打造人：{打造人['名称']}\n打造时间：{装备['打造日期'].strftime('%Y-%m-%d %H:%M:%S')}"
+    return msg
 
 
 async def build_equipment(user_id, res):
@@ -532,13 +636,13 @@ async def compose(user_id, res):
         elif not 过滤条件:
             过滤条件 = ["武器", "外装", "饰品"]
 
-        if 合成最高等级 > 3000 or 合成最高等级 == 0:
-            合成最高等级 = 3000
+        if 合成最高等级 > 300 or 合成最高等级 == 0:
+            合成最高等级 = 300
         最低, 最高 = 1, 合成最高等级
         if 等级限制:
             最低, 最高 = min(等级限制), max(等级限制)
-        if 最高 > 1500:
-            最高 = 1500
+        if 最高 > 150:
+            最高 = 150
         while True:
             # 按条件过滤图纸
             用户图纸列表 = [i for i in 用户输入图纸列表 if i in 图纸]
@@ -763,7 +867,7 @@ async def claim_rewards(user_id):
         材料[获得材料名称] += 1
         msg += f", {获得材料名称}"
     for _ in range(获得图纸):
-        图纸等级 = random.randint(2500, 3500)
+        图纸等级 = random.randint(250, 350)
         图纸类型 = random.choice(["武器", "饰品", "外装"])
         获得图纸名称 = 图纸类型 + str(图纸等级)
         if 获得图纸名称 not in 图纸:
@@ -919,13 +1023,9 @@ async def forgotten_skill(user_id, res):
     return f"遗忘武学{skill_name}成功！"
 
 
-async def comprehension_skill(user_id, res):
+async def comprehension_skill(user_id):
     """领悟武学"""
-    if not res:
-        return "输入格式错误"
-    银两 = int(res[0])
-    if 银两 <= 0:
-        return "想领悟武学，多多少少的也得花一点银子吧……"
+    银两 = 300
     拥有银两 = 0
     con = db.user_info.find_one({"_id": user_id})
     if con:
@@ -937,11 +1037,9 @@ async def comprehension_skill(user_id, res):
     已领悟武学 = user_info.基础属性.get("已领悟武学", [])
     sl = Skill()
     全部武学 = list(sl.skill.keys())
-    全部武学数量 = len(全部武学)
     已领悟武学数量 = len(已领悟武学)
-    if 已领悟武学数量 == 全部武学数量:
-        return "你已经学会了所有武学，不需要再领悟了！"
-
+    if 已领悟武学数量 > 14:
+        return "每人只能领悟十四个武学，请先遗忘其他武学后再继续领悟吧。"
     # 检查领悟武学cd
     n_cd_time = 60
     app_name = "领悟武学"
@@ -952,12 +1050,10 @@ async def comprehension_skill(user_id, res):
     await search_once(user_id, app_name)
 
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": -银两}}, True)
-    if random.randint(1, 100) < 银两:
-        武学 = random.choice(全部武学)
-        if 武学 in 已领悟武学:
-            return "领悟失败"
-    else:
+    武学 = random.choice(全部武学)
+    if 武学 in 已领悟武学:
         return "领悟失败"
+
     已领悟武学.append(武学)
     db.jianghu.update_one({"_id": user_id}, {"$set": {"已领悟武学": 已领悟武学}}, True)
     return f"花费{银两}两银子，成功领悟武学：{武学}"
@@ -976,7 +1072,7 @@ async def impart_skill(user_id, at_qq, 武学):
     con = db.user_info.find_one({"_id": user_id})
     if con:
         拥有银两 = con.get("gold", 0)
-    需要花费银两 = 1000
+    需要花费银两 = 3000
     if 拥有银两 < 需要花费银两:
         return f"传授武学需要{需要花费银两}两银子，你的银两不足"
     被传授方武学.append(武学)
@@ -986,7 +1082,7 @@ async def impart_skill(user_id, at_qq, 武学):
 
 
 async def pk_log(日期, 编号):
-    战斗记录 = db.pk_log.find_one({"编号": 编号, "日期": 日期})
+    战斗记录 = db.pk_log.find_one({"编号": 编号, "日期": int(日期)})
     if not 战斗记录:
         return "没有找到对应的战斗记录"
     data = {

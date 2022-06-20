@@ -67,26 +67,3 @@ async def get_sign_in(user_id: int, user_name: str, group_id: int) -> Message:
                                           gold=gold,
                                           **suangua_data)
     return MessageSegment.image(img)
-
-
-async def reset_sign_nums():
-    '''重置签到人数与福缘'''
-
-    sign_num = db.bot_conf.find_one({'_id': 1}).get("sign_num", 0)
-    prize_pool = sign_num * 5000
-    db.bot_conf.update_one({"_id": 1},
-                           {'$set': {
-                               "sign_num": 0,
-                               "prize_pool": prize_pool
-                           }}, True)
-    db.group_conf.update_many({}, {'$set': {"lucky": 0, "add_group_num": 0}}, True)
-    db.user_info.update_many({},
-                             {'$set': {
-                                 "user_lucky": 1.0,
-                                 "is_sign": False,
-                                 "river_lantern": 0,
-                                 "dungeon_num": 0,
-                                 "contribution": 0,
-                                 "energy": 100,
-                                 "discard_equipment_num": 0
-                             }}, True)
