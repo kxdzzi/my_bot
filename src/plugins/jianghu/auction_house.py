@@ -159,21 +159,19 @@ async def 购买商品(购买人id, 名称):
     user_info = UserInfo(购买人id)
     if user_info.基础属性["善恶值"] < -2000:
         return "善恶值过低, 无法购买物品"
-    数量 = 1
+    limit = 1
     if 名称.isdigit():
         商品id = int(名称)
-        # 购买人银两是否足够
         查找商品 = db.auction_house.find({"_id": 商品id})
-        if not 商品:
+        if not 查找商品:
             return "商品不存在！"
-    if "*" in 商品名称:
-        商品名称, 数量 = 名称.split("*")
-        数量 = int(数量)
-        商品 = db.auction_house.find({"名称": 商品名称})
-        filter = {'名称': 商品名称}
-        sort = list({'价格': 1}.items())
-        limit = 数量
-        查找商品 = db.auction_house.find(filter=filter, sort=sort, limit=limit)
+    if "*" in 名称:
+        名称, 数量 = 名称.split("*")
+        limit = int(数量)
+    filter = {'名称': 名称}
+    sort = list({'价格': 1}.items())
+    查找商品 = db.auction_house.find(filter=filter, sort=sort, limit=limit)
+
     数量 = 0
     总花费 = 0
     for 商品 in 查找商品:
@@ -219,7 +217,7 @@ async def 购买商品(购买人id, 名称):
             [寄售人], f"{商品名称}售卖成功通知",
             f"您寄售的[{商品名称}]于{当前时间}，被【{购买人.基础属性['名称']}】以{商品价格}两银子买走。扣除手续费{手续费}，共获得{获得银两}")
         logger.info(f"购买商品: {寄售人}[{商品名称}]({商品id}) -({商品价格})-> {购买人.基础属性['名称']}({购买人id})")
-    msg += f"购买商品完成\n花费{总花费}两银子，获得[{商品名称}*{数量}]"
+    msg = f"购买商品完成\n花费{总花费}两银子，获得[{名称}*{数量}]"
     return msg
 
 
