@@ -654,7 +654,7 @@ async def compose(user_id, res):
 
             # 首尾分组
             for n, i in enumerate(过滤后图纸):
-                if (int(i[2:]) + int(过滤后图纸[-1][2:])) < 合成最高等级:
+                if (int(i[2:]) + int(过滤后图纸[-1][2:])) <= 合成最高等级:
                     break
             可合成 = 过滤后图纸[n:]
             待合成 = []
