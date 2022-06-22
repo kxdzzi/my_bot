@@ -852,30 +852,39 @@ async def claim_rewards(user_id):
     图纸 = 背包.get("图纸", {})
     材料 = 背包.get("材料", {})
     msg = ""
+    奖励 = {}
     for _ in range(获得彩材料):
         材料属性 = random.choice("金木水火土")
         获得材料名称 = "彩" + 材料属性
         if 获得材料名称 not in 材料:
             材料[获得材料名称] = 0
+        if 获得材料名称 not in 奖励:
+            奖励[获得材料名称] = 0
         材料[获得材料名称] += 1
-        msg += f", {获得材料名称}"
+        奖励[获得材料名称] += 1
     for _ in range(获得紫材料):
         材料属性 = random.choice("金木水火土")
         获得材料名称 = "紫" + 材料属性
         if 获得材料名称 not in 材料:
             材料[获得材料名称] = 0
+        if 获得材料名称 not in 奖励:
+            奖励[获得材料名称] = 0
         材料[获得材料名称] += 1
-        msg += f", {获得材料名称}"
+        奖励[获得材料名称] += 1
     for _ in range(获得图纸):
         图纸等级 = random.randint(250, 350)
         图纸类型 = random.choice(["武器", "饰品", "外装"])
         获得图纸名称 = 图纸类型 + str(图纸等级)
         if 获得图纸名称 not in 图纸:
             图纸[获得图纸名称] = 0
+        if 获得图纸名称 not in 奖励:
+            奖励[获得图纸名称] = 0
         图纸[获得图纸名称] += 1
-        msg += f", {获得图纸名称}"
+        奖励[获得图纸名称] += 1
     db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸, "材料": 材料}})
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": 获得银两}})
+    if 奖励:
+        msg = "、".join([f"{k}*{v}" for k, v in 奖励.items()])
     return f"消耗{contribution}贡献值, 获得银两{获得银两}" + msg
 
 
