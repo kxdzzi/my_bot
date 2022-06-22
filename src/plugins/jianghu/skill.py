@@ -462,7 +462,7 @@ class Skill():
         """
         if randint(1, 100) < 75:
             削减内力 = 数值 * 0.3
-            有效变化 = 目标.内力变化(-削减内力)
+            有效变化 = 目标.内力变化(-削减内力, True)
             self.战斗记录(f"<strong>{自己.名称}</strong> 剑破万法 {目标.名称} 内力<span class='text-primary'>{有效变化}</span>")
             return 数值, False
         return 数值, False
