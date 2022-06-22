@@ -483,7 +483,7 @@ class Skill():
         减伤 = 有效变化 * 8
         if 减伤 != 0:
             self.战斗记录(f"<strong>{自己.名称}</strong> 八宝金身 内力 <span class='text-primary'>{有效变化}</span> 减伤 {减伤}")
-        数值 -= 减伤
+        数值 += 减伤
         return 数值, False
 
     def 北冥神功(self, 自己: UserInfo, 目标: UserInfo, 数值: int):
@@ -504,7 +504,7 @@ class Skill():
         数值 -= 自己.基础属性["元气"]
         目标.改变当前状态({"元气": -改变元气})
         自己.改变当前状态({"元气": 改变元气})
-        self.战斗记录(f"<strong>{自己.名称}</strong> 北冥神功 吸取内力 +<span class='text-primary'>{自己有效变化}</span> ({自己.当前内力}/{自己.当前状态['内力上限']}) {目标.名称} 内力-<span class='text-primary'>{目标有效变化}</span> 元气-{改变元气}")
+        self.战斗记录(f"<strong>{自己.名称}</strong> 北冥神功 吸取内力 +<span class='text-primary'>{自己有效变化}</span> ({自己.当前内力}/{自己.当前状态['内力上限']}) {目标.名称} 内力<span class='text-primary'>{目标有效变化}</span> 元气-{改变元气}")
         return 数值, False
 
     def 十方鬼道(self, 自己: UserInfo, 目标: UserInfo):
