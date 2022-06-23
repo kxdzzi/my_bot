@@ -68,7 +68,7 @@ async def 上架商品(寄售人id, 商品名称, 价格, 备注=""):
         con = db.knapsack.find_one({"_id": 寄售人id})
         if con.get(商品名称, 0) < 数量:
             return f"{商品名称}数量不足{数量}"
-        db.knapsack.update_one({"_id": 寄售人id}, {"$inc": {商品名称: -1}})
+        db.knapsack.update_one({"_id": 寄售人id}, {"$inc": {商品名称: -数量}})
 
 
     # 重构商品: {类型, 名称, 等级, 寄售人id, 寄售时间, 关注, 备注}
