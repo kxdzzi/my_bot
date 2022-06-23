@@ -149,6 +149,8 @@ async def 下架商品(操作人id, 商品id):
         db.knapsack.update_one({"_id": 操作人id}, {"$set": con}, True)
     elif 商品类型 in ("武器", "外装", "饰品"):
         db.equip.update_one({"_id": 商品名称}, {"$set": {"持有人": 操作人id}}, True)
+    elif 商品类型 == "物品":
+        db.knapsack.update_one({"_id": 操作人id}, {"$inc": {商品名称: 1}}, True)
     # 交易行删除商品
     db.auction_house.delete_one({"_id": 商品id})
     logger.info(f"下架商品: {操作人id}下架{商品名称}({商品id})成功！")
