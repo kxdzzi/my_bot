@@ -17,7 +17,7 @@ from src.utils.email import mail_client
 from src.plugins.jianghu.shop import shop
 from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表, 重铸装备
 from src.plugins.jianghu.jianghu import PK
-from src.plugins.jianghu.world_boss import world_boss, start_resurrection_world_boss
+from src.plugins.jianghu.world_boss import world_boss
 from src.utils.cooldown_time import search_record, search_once
 from src.plugins.jianghu.dungeon import 挑战秘境, 查看秘境, 秘境进度
 
