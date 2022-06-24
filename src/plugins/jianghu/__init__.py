@@ -677,12 +677,3 @@ async def _(event: GroupMessageEvent):
         target_id = int(at_member_list[0])
     msg = await source.healing(user_id, target_id)
     await healing.finish(msg)
-
-
-@scheduler.scheduled_job("cron", hour="10,15,20,23", minute=0)
-async def _():
-    '''10,15,20刷新世界boss'''
-    if config.node_info.get("node") == config.node_info.get("main"):
-        logger.info("正在复活世界首领")
-        await source.resurrection_world_boss()
-        logger.info("世界首领已复活")

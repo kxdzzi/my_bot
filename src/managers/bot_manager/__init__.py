@@ -206,6 +206,20 @@ async def recovery_qihai():
         db.jianghu.update_one({"_id": data["_id"]}, {"$set": {"当前气海": data["当前气海"]}})
 
 
+async def start_resurrection_world_boss():
+    project = {"_id": 1, "体质": 1, "根骨": 1}
+    if 已重伤首领 := db.npc.find({"类型": "首领", "重伤状态": True}, projection=project):
+        已重伤首领列表 = list(已重伤首领)
+        if 已重伤首领列表:
+            复活首领 = random.choice(已重伤首领列表)
+            db.npc.update_one({"_id": 复活首领["_id"]}, {
+                "$set": {
+                    "重伤状态": False,
+                    "当前气血": 复活首领["体质"] * 30,
+                    "当前内力": 复活首领["根骨"] * 5
+                }
+            }, True)
+
 @scheduler.scheduled_job("cron", hour=4, minute=0)
 async def _():
     '''每天4点开始偷偷的干活'''
@@ -227,6 +241,15 @@ async def _():
     """每分钟检测"""
     await disband_team()
     await team_notice()
+
+
+@scheduler.scheduled_job("cron", hour="10,15,20,23", minute=1)
+async def _():
+    '''10,15,20, 23刷新世界boss'''
+    if config.node_info.get("node") == config.node_info.get("main"):
+        logger.info("正在复活世界首领")
+        await start_resurrection_world_boss()
+        logger.info("世界首领已复活")
 
 
 @scheduler.scheduled_job("cron", hour=8, minute=0)

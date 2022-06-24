@@ -914,11 +914,6 @@ async def dungeon_progress(user_id):
     return await 秘境进度(user_id)
 
 
-async def resurrection_world_boss():
-    """复活世界首领"""
-    start_resurrection_world_boss()
-
-
 async def set_skill(user_id, res):
     """配置武学"""
     已领悟武学 = []

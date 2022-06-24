@@ -38,18 +38,3 @@ async def world_boss(user_id, 世界首领名称):
     await search_once(user_id, app_name)
     战斗 = PK()
     return await 战斗.main("世界首领", user_id, world_boss_dict[世界首领名称])
-
-
-def start_resurrection_world_boss():
-    project = {"_id": 1, "体质": 1, "根骨": 1}
-    if 已重伤首领 := db.npc.find({"类型": "首领", "重伤状态": True}, projection=project):
-        已重伤首领列表 = list(已重伤首领)
-        if 已重伤首领列表:
-            复活首领 = random.choice(已重伤首领列表)
-            db.npc.update_one({"_id": 复活首领["_id"]}, {
-                "$set": {
-                    "重伤状态": False,
-                    "当前气血": 复活首领["体质"] * 30,
-                    "当前内力": 复活首领["根骨"] * 5
-                }
-            }, True)
