@@ -57,8 +57,6 @@ class MailClient(object):
                 else:
                     receiver = f"{receiver}@qq.com"
             receiver_list.append(receiver)
-        message['From'] = Header(f'{self._sender}<{self._mail}>', 'utf-8')
-        message['To'] = Header(";".join([f"<{i}>" for i in receiver_list]), 'utf-8')
         message["Subject"] = mail_title
         msg = f"{self._sender}[{self._mail}] -> {receiver_list}: {text}"
         logger.info(msg)
@@ -67,7 +65,7 @@ class MailClient(object):
             async with SMTP(hostname=self._host, port=self._pord,
                             use_tls=True) as smtp:
                 await smtp.login(self._mail, self._pass)
-                await smtp.send_message(message)
+                await smtp.sendmail(self._sender, receiver_list, message)
         except SMTPException as e:
             log = f"发送邮件失败，原因：{str(e)}"
             logger.error(log)
