@@ -316,7 +316,7 @@ def 精力丹(自己: UserInfo, 数量: int):
                             {"$inc": {
                                 "energy": 数量 * 10,
                             }}, True)
-    return f"使用精力丹成功，恢复精力{数量 * 10}点"
+    return True, f"使用精力丹成功，恢复精力{数量 * 10}点"
 
 
 def 功德录(自己: UserInfo, 数量: int):
