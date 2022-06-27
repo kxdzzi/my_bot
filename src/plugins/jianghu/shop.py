@@ -25,7 +25,7 @@ def 材料盒(自己: UserInfo, 数量: int):
         获取物品列表[材料名称] += 材料数量
     msg += "、".join([f"{k} * {v}" for k, v in 获取物品列表.items()])
     db.knapsack.update_one({"_id": user_id}, {"$set": {"材料": 材料}}, True)
-    return msg
+    return True, msg
 
 
 def 图纸盒(自己: UserInfo, 数量: int):
@@ -49,7 +49,7 @@ def 图纸盒(自己: UserInfo, 数量: int):
         获取物品列表[图纸名称] += 1
     msg += "、".join([f"{k} * {v}" for k, v in 获取物品列表.items()])
     db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸}}, True)
-    return msg
+    return True, msg
 
 
 def 活血丹(自己: UserInfo, 数量: int):
@@ -63,7 +63,7 @@ def 活血丹(自己: UserInfo, 数量: int):
                           {"$set": {
                               "当前气血": 自己.当前气血,
                           }}, True)
-    return f"使用活血丹成功，当前气血为{自己.当前气血}"
+    return True, f"使用活血丹成功，当前气血为{自己.当前气血}"
 
 
 def 大活血丹(自己: UserInfo, 数量: int):
@@ -75,7 +75,7 @@ def 大活血丹(自己: UserInfo, 数量: int):
                           {"$set": {
                               "当前气血": 自己.当前气血,
                           }}, True)
-    return f"使用大活血丹成功，当前气血为{自己.当前气血}"
+    return True, f"使用大活血丹成功，当前气血为{自己.当前气血}"
 
 
 def 疏络丹(自己: UserInfo, 数量: int):
@@ -89,7 +89,7 @@ def 疏络丹(自己: UserInfo, 数量: int):
                           {"$set": {
                               "当前内力": 自己.当前内力,
                           }}, True)
-    return f"使用疏络丹成功，当前内力为{自己.当前内力}"
+    return True, f"使用疏络丹成功，当前内力为{自己.当前内力}"
 
 
 def 大疏络丹(自己: UserInfo, 数量: int):
@@ -101,7 +101,7 @@ def 大疏络丹(自己: UserInfo, 数量: int):
                           {"$set": {
                               "当前内力": 自己.当前内力,
                           }}, True)
-    return f"使用大疏络丹成功，当前内力为{自己.当前内力}"
+    return True, f"使用大疏络丹成功，当前内力为{自己.当前内力}"
 
 
 def 大洗髓丹(自己: UserInfo, 数量: int):
@@ -196,7 +196,7 @@ def _开宝箱(自己: UserInfo,
         msg = f"打开了{数量}个{宝箱名称}, 获得:" + msg
     else:
         msg = "你啥都没开出来"
-    return msg
+    return True, msg
 
 
 def 青铜宝箱(自己: UserInfo, 数量: int):
@@ -322,12 +322,12 @@ def 精力丹(自己: UserInfo, 数量: int):
 def 功德录(自己: UserInfo, 数量: int):
     增加善恶 = 数量 * 5
     if 自己.基础属性["善恶值"] >= 95:
-        return f"你的善恶值不需要用!"
+        return False, f"你的善恶值不需要用!"
     if 自己.基础属性["善恶值"] + 增加善恶 > 100:
-        return f"你的善恶值没那么低，现在只能使用{-自己.基础属性['善恶值'] // 5}本"
+        return False, f"你的善恶值没那么低，现在只能使用{(100 - 自己.基础属性['善恶值']) // 5}本"
     db.jianghu.update_one({"_id": 自己.基础属性["_id"]},
                           {"$inc": {"善恶值": 增加善恶}}, True)
-    return f"使用功德录成功，善恶值+{增加善恶}"
+    return True, f"使用功德录成功，善恶值+{增加善恶}"
 
 
 def 洗髓丹体质(自己: UserInfo, 数量: int):
@@ -350,7 +350,7 @@ def 洗髓丹身法(自己: UserInfo):
     pass
 
 def 人傻钱多(自己: UserInfo):
-    return "这个东西价值一个亿，真有钱啊，一个亿。整整一亿银两。真有钱。"
+    return True, "这个东西价值一个亿，真有钱啊，一个亿。整整一亿银两。真有钱。"
 
 shop = {
     "人傻钱多": {

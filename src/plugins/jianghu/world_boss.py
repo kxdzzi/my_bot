@@ -21,15 +21,11 @@ async def world_boss(user_id, 世界首领名称):
         return "你已重伤，无法进攻世界首领"
     if  db.npc.find_one({"_id": world_boss_dict[世界首领名称]}).get("重伤状态"):
         return "该首领已重伤，无法继续进攻"
-    user_info = db.user_info.find_one_and_update(
-            filter={"_id": user_id},
-            update={"$inc": {"energy": -4}},
-            upsert=True
-        )
+    user_info = db.user_info.find_one({"_id": user_id})
     精力 = user_info.get("energy", 0)
     if 精力 < 4:
-        精力 = 0
         return f"你只有{精力}精力, 无法获得奖励"
+    db.user_info.update_one({"_id": user_id}, {"$inc": {"energy": -4}})
     n_cd_time = 5
     flag, cd_time = await search_record(user_id, app_name, n_cd_time)
     if not flag:

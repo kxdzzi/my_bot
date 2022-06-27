@@ -283,6 +283,8 @@ async def use_goods(user_id, res):
         return "物品不存在"
     if len(res) == 2:
         数量 = int(res[1])
+    if 数量 < 1:
+        return f"使用数量必须大于等于1个"
     if 数量 > 使用数量限制:
         return f"该物品一次只能用{使用数量限制}个"
     con = db.knapsack.find_one({"_id": user_id})
@@ -292,8 +294,9 @@ async def use_goods(user_id, res):
         logger.debug(f"使用物品 | {物品} | <e>{user_id}</e> | <r>物品数量不足</r>")
         return "你的物品数量不足！"
     user_info = UserInfo(user_id)
-    db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
-    msg = 使用物品(user_info, 数量)
+    result, msg = 使用物品(user_info, 数量)
+    if result:
+        db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
     return msg
 
 
