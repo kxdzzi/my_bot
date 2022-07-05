@@ -68,7 +68,7 @@ async def 上架商品(寄售人id, 商品名称, 价格, 备注=""):
         con = db.knapsack.find_one({"_id": 寄售人id})
         if con.get(商品名称, 0) < 数量:
             return f"{商品名称}数量不足{数量}"
-        db.knapsack.update_one({"_id": 寄售人id}, {"$inc": {商品名称: -1}})
+        db.knapsack.update_one({"_id": 寄售人id}, {"$inc": {商品名称: -数量}})
 
 
     # 重构商品: {类型, 名称, 等级, 寄售人id, 寄售时间, 关注, 备注}
@@ -149,6 +149,8 @@ async def 下架商品(操作人id, 商品id):
         db.knapsack.update_one({"_id": 操作人id}, {"$set": con}, True)
     elif 商品类型 in ("武器", "外装", "饰品"):
         db.equip.update_one({"_id": 商品名称}, {"$set": {"持有人": 操作人id}}, True)
+    elif 商品类型 == "物品":
+        db.knapsack.update_one({"_id": 操作人id}, {"$inc": {商品名称: 1}}, True)
     # 交易行删除商品
     db.auction_house.delete_one({"_id": 商品id})
     logger.info(f"下架商品: {操作人id}下架{商品名称}({商品id})成功！")
@@ -165,15 +167,18 @@ async def 购买商品(购买人id, 名称):
         查找商品 = db.auction_house.find({"_id": 商品id})
         if not 查找商品:
             return "商品不存在！"
-    if "*" in 名称:
-        名称, 数量 = 名称.split("*")
-        limit = int(数量)
-    filter = {'名称': 名称}
-    sort = list({'价格': 1}.items())
-    查找商品 = db.auction_house.find(filter=filter, sort=sort, limit=limit)
+    else:
+        if "*" in 名称:
+            名称, 数量 = 名称.split("*")
+            limit = int(数量)
+        filter = {'名称': 名称}
+        sort = list({'价格': 1}.items())
+        查找商品 = db.auction_house.find(filter=filter, sort=sort, limit=limit)
 
     数量 = 0
     总花费 = 0
+    商品名称 = ""
+    mail_msg = {}
     for 商品 in 查找商品:
         商品id = 商品["_id"]
         商品价格 = 商品["价格"]
@@ -211,13 +216,21 @@ async def 购买商品(购买人id, 名称):
         总花费 += 商品价格
         db.user_info.update_one({"_id": 购买人id}, {"$inc": {"gold": -商品价格}})
         db.user_info.update_one({"_id": 寄售人}, {"$inc": {"gold": 获得银两}})
-        当前时间 = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        购买人 = UserInfo(购买人id)
+        if 寄售人 not in mail_msg:
+            mail_msg[寄售人] = {"数量": 0, "商品价格": 0, "手续费":0, "获得银两": 0}
+        mail_msg[寄售人]["数量"] += 1
+        mail_msg[寄售人]["商品价格"] += 商品价格
+        mail_msg[寄售人]["手续费"] += 手续费
+        mail_msg[寄售人]["获得银两"] += 获得银两
+
+    购买人 = UserInfo(购买人id)
+    当前时间 = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    for 寄售人, v in mail_msg.items():
         await mail_client.send_mail(
             [寄售人], f"{商品名称}售卖成功通知",
-            f"您寄售的[{商品名称}]于{当前时间}，被【{购买人.基础属性['名称']}】以{商品价格}两银子买走。扣除手续费{手续费}，共获得{获得银两}")
-        logger.info(f"购买商品: {寄售人}[{商品名称}]({商品id}) -({商品价格})-> {购买人.基础属性['名称']}({购买人id})")
-    msg = f"购买商品完成\n花费{总花费}两银子，获得[{名称}*{数量}]"
+            f"您寄售的[{商品名称}]于{当前时间}，被【{购买人.基础属性['名称']}】买走[{v['数量']}]个\n共计价格{v['商品价格']}两银子。扣除手续费{v['手续费']}，共获得{v['获得银两']}")
+        logger.info(f"购买商品: {寄售人}[{商品名称}] -({v['商品价格']}*{v['数量']})-> {购买人.基础属性['名称']}({购买人id})")
+    msg = f"购买商品完成\n花费{总花费}两银子，获得[{商品名称}*{数量}]"
     return msg
 
 

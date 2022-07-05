@@ -1,4 +1,5 @@
 from datetime import datetime
+from email.utils import formataddr
 from email.mime.text import MIMEText
 from email.header import Header
 
@@ -46,8 +47,7 @@ class MailClient(object):
                         mail_content: str) -> None:
         n = random.randint(1, 15)
         self._mail = f"{self._user}{n}@{self._domain}"
-        text = mail_content
-        message = MIMEText(text)
+        message = MIMEText(mail_content)
         receiver_list = []
         for receiver in receivers:
             if isinstance(receiver, int):
@@ -57,17 +57,15 @@ class MailClient(object):
                 else:
                     receiver = f"{receiver}@qq.com"
             receiver_list.append(receiver)
-        message['From'] = Header(f'{self._sender}<{self._mail}>', 'utf-8')
-        message['To'] = Header(";".join([f"<{i}>" for i in receiver_list]), 'utf-8')
         message["Subject"] = mail_title
-        msg = f"{self._sender}[{self._mail}] -> {receiver_list}: {text}"
+        message['From'] = formataddr((Header(self._sender, 'utf-8').encode(), self._mail))
+        msg = f"{self._sender}[{self._mail}] -> {receiver_list}: {mail_content}"
         logger.info(msg)
 
         try:
-            async with SMTP(hostname=self._host, port=self._pord,
-                            use_tls=True) as smtp:
+            async with SMTP(hostname=self._host, port=self._pord, use_tls=True) as smtp:
                 await smtp.login(self._mail, self._pass)
-                await smtp.send_message(message)
+                await smtp.send_message(message, self._mail, receiver_list)
         except SMTPException as e:
             log = f"发送邮件失败，原因：{str(e)}"
             logger.error(log)

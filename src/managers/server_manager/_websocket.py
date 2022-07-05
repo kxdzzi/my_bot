@@ -136,7 +136,7 @@ class Jx3WebSocket(object):
         '''处理回复数据'''
         data: dict = json.loads(message)
         # logger.success(data)
-        msg_type = data.get("type")
+        msg_type = data.get("action")
         if event := RecvEvent.create_event(msg_type, data.get('data')):
             logger.debug(event.log)
             bots = get_bots()

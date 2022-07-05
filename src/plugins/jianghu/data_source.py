@@ -17,7 +17,7 @@ from src.utils.email import mail_client
 from src.plugins.jianghu.shop import shop
 from src.plugins.jianghu.equipment import 打造装备, 合成图纸, 合成材料, 装备价格, 镶嵌装备, 材料等级表, 重铸装备
 from src.plugins.jianghu.jianghu import PK
-from src.plugins.jianghu.world_boss import world_boss, start_resurrection_world_boss
+from src.plugins.jianghu.world_boss import world_boss
 from src.utils.cooldown_time import search_record, search_once
 from src.plugins.jianghu.dungeon import 挑战秘境, 查看秘境, 秘境进度
 
@@ -140,6 +140,18 @@ async def set_name(user_id, res):
         msg = "，首次改名不需要花费银两。"
     db.jianghu.update_one({"_id": user_id}, {"$set": {"名称": name}}, True)
     return "改名成功" + msg
+
+
+async def open_qihai(user_id):
+    """开启气海"""
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"气海开关": True}}, True)
+    return "气海开启"
+
+
+async def close_qihai(user_id):
+    """关闭气海"""
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"气海开关": False}}, True)
+    return "气海关闭"
 
 
 async def practice_qihai(user_id, res):
@@ -283,6 +295,8 @@ async def use_goods(user_id, res):
         return "物品不存在"
     if len(res) == 2:
         数量 = int(res[1])
+    if 数量 < 1:
+        return f"使用数量必须大于等于1个"
     if 数量 > 使用数量限制:
         return f"该物品一次只能用{使用数量限制}个"
     con = db.knapsack.find_one({"_id": user_id})
@@ -292,8 +306,9 @@ async def use_goods(user_id, res):
         logger.debug(f"使用物品 | {物品} | <e>{user_id}</e> | <r>物品数量不足</r>")
         return "你的物品数量不足！"
     user_info = UserInfo(user_id)
-    db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
-    msg = 使用物品(user_info, 数量)
+    result, msg = 使用物品(user_info, 数量)
+    if result:
+        db.knapsack.update_one({"_id": user_id}, {"$inc": {物品: -数量}}, True)
     return msg
 
 
@@ -852,30 +867,39 @@ async def claim_rewards(user_id):
     图纸 = 背包.get("图纸", {})
     材料 = 背包.get("材料", {})
     msg = ""
+    奖励 = {}
     for _ in range(获得彩材料):
         材料属性 = random.choice("金木水火土")
         获得材料名称 = "彩" + 材料属性
         if 获得材料名称 not in 材料:
             材料[获得材料名称] = 0
+        if 获得材料名称 not in 奖励:
+            奖励[获得材料名称] = 0
         材料[获得材料名称] += 1
-        msg += f", {获得材料名称}"
+        奖励[获得材料名称] += 1
     for _ in range(获得紫材料):
         材料属性 = random.choice("金木水火土")
         获得材料名称 = "紫" + 材料属性
         if 获得材料名称 not in 材料:
             材料[获得材料名称] = 0
+        if 获得材料名称 not in 奖励:
+            奖励[获得材料名称] = 0
         材料[获得材料名称] += 1
-        msg += f", {获得材料名称}"
+        奖励[获得材料名称] += 1
     for _ in range(获得图纸):
         图纸等级 = random.randint(250, 350)
         图纸类型 = random.choice(["武器", "饰品", "外装"])
         获得图纸名称 = 图纸类型 + str(图纸等级)
         if 获得图纸名称 not in 图纸:
             图纸[获得图纸名称] = 0
+        if 获得图纸名称 not in 奖励:
+            奖励[获得图纸名称] = 0
         图纸[获得图纸名称] += 1
-        msg += f", {获得图纸名称}"
+        奖励[获得图纸名称] += 1
     db.knapsack.update_one({"_id": user_id}, {"$set": {"图纸": 图纸, "材料": 材料}})
     db.user_info.update_one({"_id": user_id}, {"$inc": {"gold": 获得银两}})
+    if 奖励:
+        msg = "、".join([f"{k}*{v}" for k, v in 奖励.items()])
     return f"消耗{contribution}贡献值, 获得银两{获得银两}" + msg
 
 
@@ -903,11 +927,6 @@ async def view_dungeon(user_id, res):
 async def dungeon_progress(user_id):
     """秘境进度"""
     return await 秘境进度(user_id)
-
-
-async def resurrection_world_boss():
-    """复活世界首领"""
-    start_resurrection_world_boss()
 
 
 async def set_skill(user_id, res):
