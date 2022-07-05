@@ -274,7 +274,7 @@ class PK(Skill):
         return data
 
     async def 战前恢复(self, user_info: UserInfo):
-        if not user_info.基础属性["气海开关"]:
+        if not user_info.基础属性.get("气海开关"):
             return
         气血上限 = user_info.当前状态["气血上限"]
         当前气血 = user_info.当前气血
