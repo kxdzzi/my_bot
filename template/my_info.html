@@ -62,7 +62,12 @@
                             <h5>气血：<span style="color:rgb(65, 136, 43);">{{ base_attribute.当前气血 }}</span>/<span style="color:rgb(65, 136, 43);">{{ user_stat.气血上限 }}</span></h5>
                         {% endif %}
                         <h5>内力：<span style="color:rgb(24, 68, 161);">{{ base_attribute.当前内力 }}</span>/<span style="color:rgb(24, 68, 161);">{{ user_stat.内力上限 }}</span></h5>
-                        <h5>气海：<span style="color:rgb(126, 24, 146);">{{ base_attribute.当前气海 }}</span>/<span style="color:rgb(126, 24, 146);">{{ base_attribute.气海上限 }}</span></h5>
+                        base_attribute.气海开关
+                        {% if base_attribute.气海开关 %}
+                            <h5>气海：<span style="color:rgb(126, 24, 146);">{{ base_attribute.当前气海 }}</span>/<span style="color:rgb(126, 24, 146);">{{ base_attribute.气海上限 }}</span></h5>
+                        {% else %}
+                            <h5>气海：<span style="color:rgb(77, 79, 83);">{{ base_attribute.当前气海 }}</span>/<span style="color:rgb(77, 79, 83);">{{ user_stat.气海上限 }}</span></h5>
+                        {% endif %}
                         <h5>速度：{{user_stat.速度}}</h5>
                         <h5>状态抗性：{{user_stat.状态抗性}}</h5>
                         <h5>外功攻击：{{user_stat.外功攻击}} | 外功穿透：{{user_stat.外功穿透}}</h5>
