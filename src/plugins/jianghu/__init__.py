@@ -44,6 +44,8 @@ give = on_regex(r"^赠送 *\[CQ:at,qq=\d+\] *.+$",
                 priority=5,
                 block=True)
 practice_qihai = on_regex(r"^修炼气海 \d+$", permission=GROUP, priority=5, block=True)
+open_qihai = on_regex(r"^(开启|打开)气海$", permission=GROUP, priority=5, block=True)
+close_qihai = on_regex(r"^关闭气海$", permission=GROUP, priority=5, block=True)
 recovery_qihai = on_regex(r"^恢复气海 \d+$", permission=GROUP, priority=5, block=True)
 comprehension_skill = on_regex(r"^领悟武学$",
                                permission=GROUP,
@@ -188,6 +190,22 @@ async def _(event: GroupMessageEvent, res=Depends(get_content)):
     user_id = event.user_id
     msg = await source.practice_qihai(user_id, res)
     await practice_qihai.finish(msg)
+
+
+@open_qihai.handle()
+async def _(event: GroupMessageEvent):
+    '''开启气海'''
+    user_id = event.user_id
+    msg = await source.open_qihai(user_id)
+    await open_qihai.finish(msg)
+
+
+@close_qihai.handle()
+async def _(event: GroupMessageEvent):
+    '''关闭气海'''
+    user_id = event.user_id
+    msg = await source.close_qihai(user_id)
+    await close_qihai.finish(msg)
 
 
 @recovery_qihai.handle()

@@ -142,6 +142,18 @@ async def set_name(user_id, res):
     return "改名成功" + msg
 
 
+async def open_qihai(user_id):
+    """开启气海"""
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"气海开关": True}}, True)
+    return "气海开启"
+
+
+async def close_qihai(user_id):
+    """关闭气海"""
+    db.jianghu.update_one({"_id": user_id}, {"$set": {"气海开关": False}}, True)
+    return "气海关闭"
+
+
 async def practice_qihai(user_id, res):
     '''修炼气海'''
     if not res:
