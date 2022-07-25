@@ -480,8 +480,7 @@ async def _(event: GroupMessageEvent,
     # 判断有没有token
     msg, data = await source.get_data_from_api(app=JX3APP.奇遇查询,
                                                group_id=event.group_id,
-                                               params=params,
-                                               need_ticket=True)
+                                               params=params)
 
     if msg != "success":
         msg = f"查询失败，{msg}"
