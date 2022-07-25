@@ -58,7 +58,7 @@ class JX3APP(Enum):
     官方资讯 = APP("/app/news", 0)
     维护公告 = APP("/app/announce", 0)
     阵眼效果 = APP("/app/matrix", 0)
-    物品价格 = APP("/app/price", 0)
+    物品价格 = APP("/next/price", 0)
     刷新地点 = APP("/app/horse", 0)
     主从大区 = APP("/app/server", 0)
     随机骚话 = APP("/app/random", 0)

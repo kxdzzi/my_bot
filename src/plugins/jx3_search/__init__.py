@@ -44,6 +44,8 @@ class REGEX(Enum):
     奇遇查询 = r"(^查询 [(\u4e00-\u9fa5)|(@)]+$)|(^查询 [\u4e00-\u9fa5]+ [(\u4e00-\u9fa5)|(@)]+$)"
     奇遇统计 = r"(^奇遇 [\u4e00-\u9fa5]+$)|(^奇遇 [\u4e00-\u9fa5]+ [\u4e00-\u9fa5]+$)"
     奇遇汇总 = r"(^汇总$)|(^汇总 [\u4e00-\u9fa5]+$)"
+    比赛战绩 = r"^战绩 (?P<value1>[\S]+)$|^战绩 (?P<server>[\u4e00-\u9fa5]+) (?P<value2>[\S]+)$"
+    装备属性 = r"^属性 (?P<value1>[\S]+)$|^属性 (?P<server>[\u4e00-\u9fa5]+) (?P<value2>[\S]+)$"
 
 
 # ----------------------------------------------------------------
@@ -109,6 +111,12 @@ serendipity_summary_query = on_regex(pattern=REGEX.奇遇汇总.value,
                                      permission=GROUP,
                                      priority=5,
                                      block=True)
+match_query = on_regex(
+    pattern=REGEX.比赛战绩.value, permission=GROUP, priority=5, block=True
+)
+equip_query = on_regex(
+    pattern=REGEX.装备属性.value, permission=GROUP, priority=5, block=True
+)
 saohua_query = on_regex(pattern=REGEX.随机骚话.value,
                         permission=GROUP,
                         priority=5,
@@ -522,7 +530,7 @@ async def _(event: GroupMessageEvent, server: str = Depends(get_server_1)):
     params = {
         "server": server
     }
-    msg, data = await source.get_data_from_api(app=JX3APP.奇遇汇总, group_id=event.group_id,  params=params)
+    msg, data = await source.get_data_from_api(app=JX3APP.奇遇汇总, group_id=event.group_id, params=params)
     if msg != "success":
         msg = f"查询失败，{msg}"
         await serendipity_summary_query.finish(msg)
@@ -534,3 +542,57 @@ async def _(event: GroupMessageEvent, server: str = Depends(get_server_1)):
                                           data=get_data
                                           )
     await serendipity_summary_query.finish(MessageSegment.image(img))
+
+
+@match_query.handle()
+async def _(
+    event: GroupMessageEvent,
+    server: str = Depends(get_server_2),
+    name: str = Depends(get_name)
+):
+    """战绩查询"""
+    logger.info(
+        f"<y>群{event.group_id}</y> | <g>{event.user_id}</g> | 战绩查询 | 请求：server:{server},name:{name}"
+    )
+    params = {
+        "server": server,
+        "name": name,
+    }
+    msg, data = await source.get_data_from_api(app=JX3APP.比赛战绩, group_id=event.group_id, params=params, ticket=True)
+    if msg != "success":
+        msg = f"查询失败，{msg}"
+        await match_query.finish(msg)
+    if not data.get("history"):
+        await match_query.finish("最近没打勾勾西的老子查不到")
+    pagename = "比赛记录.html"
+    get_data = source.handle_data_match(data)
+    img = await browser.template_to_image(
+        pagename=pagename, server=server, name=name, data=get_data
+    )
+    await match_query.finish(MessageSegment.image(img))
+
+
+@equip_query.handle()
+async def _(
+    event: GroupMessageEvent,
+    server: str = Depends(get_server_2),
+    name: str = Depends(get_name)
+):
+    """装备属性查询"""
+    logger.info(
+        f"<y>群{event.group_id}</y> | <g>{event.user_id}</g> | 装备属性查询 | 请求：server:{server},name:{name}"
+    )
+    params = {
+        "server": server,
+        "name": name,
+    }
+    msg, data = await source.get_data_from_api(app=JX3APP.装备属性, group_id=event.group_id, params=params, ticket=True)
+    if msg != "success":
+        msg = f"查询失败，{msg}"
+        await equip_query.finish(msg)
+    pagename = "角色装备.html"
+    get_data = source.handle_data_equip(data)
+    img = await browser.template_to_image(
+        pagename=pagename, server=server, name=name, data=get_data
+    )
+    await equip_query.finish(MessageSegment.image(img))
