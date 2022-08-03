@@ -2,6 +2,7 @@ import json
 import os
 import re
 from enum import Enum
+from datetime import datetime
 
 from nonebot import export, on_regex
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
@@ -426,6 +427,8 @@ async def _(event: GroupMessageEvent):
     '''骚话'''
     logger.info(
         f"<y>群{event.group_id}</y> | <g>{event.user_id}</g> | 骚话 | 请求骚话")
+    if datetime.now().weekday() == 3:
+        await saohua_query.finish(await source.get_kfc())
     msg, data = await source.get_data_from_api(app=JX3APP.随机骚话,
                                                group_id=event.group_id,
                                                params=None)

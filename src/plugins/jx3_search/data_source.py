@@ -21,6 +21,13 @@ async def get_main_server(server: str) -> Optional[str]:
     return await jx3_searcher.get_server(server)
 
 
+async def get_kfc():
+    client = AsyncClient()
+    url = "https://kfc-crazy-thursday.vercel.app/api/index"
+    req = await client.get(url=url)
+    return req.text
+
+
 async def get_sand(server):
     client = AsyncClient()
     token = db.bot_conf.find_one({"_id": 1}).get("sptoken", "")
